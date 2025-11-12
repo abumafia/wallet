@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Online Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(-45deg, #1e3c72, #2a5298, #1e3c72, #2a5298);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div id="threejs-bg" class="fixed inset-0 z-0"></div>
+    
+    <!-- Navigation -->
+    <nav class="relative z-10 bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg py-4 px-6 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-blue-500 rounded-full"></div>
+                <span class="text-white text-xl font-bold">Online Bank</span>
+            </div>
+            
+            <div class="hidden md:flex space-x-6">
+                <a href="index.html" class="text-white font-semibold hover:text-blue-200 transition">Dashboard</a>
+                <a href="history.html" class="text-white font-semibold hover:text-blue-200 transition">History</a>
+                <a href="profile.html" class="text-white font-semibold border-b-2 border-blue-400">Profile</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div id="user-info" class="text-white hidden">
+                    <span id="user-name" class="font-semibold"></span>
+                    <span id="user-balance" class="ml-2 bg-blue-500 px-2 py-1 rounded-full text-xs"></span>
+                </div>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="relative z-10 container mx-auto py-8 px-4">
+        <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl p-6 mb-8 text-white">
+            <h1 class="text-3xl font-bold mb-2">Your Profile</h1>
+            <p class="text-blue-200">Manage your account settings and view your financial statistics</p>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Profile Information -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Profile Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Profile Information</h2>
+                        <button id="edit-profile-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                            Edit Profile
+                        </button>
+                    </div>
+                    
+                    <div id="profile-view">
+                        <div class="flex items-center space-x-6 mb-6">
+                            <img id="profile-avatar" src="" alt="Avatar" class="w-20 h-20 rounded-full border-4 border-blue-100">
+                            <div>
+                                <h3 id="profile-name" class="text-2xl font-bold text-gray-800"></h3>
+                                <p id="profile-username" class="text-gray-600"></p>
+                                <p id="profile-wallet" class="text-gray-500 text-sm mt-1"></p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-gray-500 text-sm">Bio</p>
+                                <p id="profile-bio" class="text-gray-800 mt-1"></p>
+                            </div>
+                            
+                            <div>
+                                <p class="text-gray-500 text-sm">Member Since</p>
+                                <p id="profile-joined" class="text-gray-800 mt-1"></p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <p class="text-gray-500 text-sm mb-2">Social Links</p>
+                            <div id="profile-social" class="flex space-x-4">
+                                <!-- Social links will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Profile Form -->
+                    <form id="profile-form" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-firstName">
+                                    First Name
+                                </label>
+                                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                       id="edit-firstName" type="text" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-lastName">
+                                    Last Name
+                                </label>
+                                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                       id="edit-lastName" type="text" required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-avatar">
+                                Avatar URL
+                            </label>
+                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                   id="edit-avatar" type="text">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-bio">
+                                Bio
+                            </label>
+                            <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                      id="edit-bio" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-facebook">
+                                    Facebook
+                                </label>
+                                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                       id="edit-facebook" type="text" placeholder="https://facebook.com/username">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-twitter">
+                                    Twitter
+                                </label>
+                                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                       id="edit-twitter" type="text" placeholder="https://twitter.com/username">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-instagram">
+                                    Instagram
+                                </label>
+                                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                       id="edit-instagram" type="text" placeholder="https://instagram.com/username">
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" id="cancel-edit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
+                                Cancel
+                            </button>
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Statistics Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Financial Statistics</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-lg text-center">
+                            <p class="text-blue-500 text-sm font-semibold">Total Income</p>
+                            <p id="total-income" class="text-2xl font-bold text-gray-800 mt-2">0 HAQ</p>
+                        </div>
+                        
+                        <div class="bg-red-50 p-4 rounded-lg text-center">
+                            <p class="text-red-500 text-sm font-semibold">Total Expenses</p>
+                            <p id="total-expenses" class="text-2xl font-bold text-gray-800 mt-2">0 HAQ</p>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded-lg text-center">
+                            <p class="text-green-500 text-sm font-semibold">Net Balance</p>
+                            <p id="net-balance" class="text-2xl font-bold text-gray-800 mt-2">0 HAQ</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <canvas id="transactions-chart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Account Summary -->
+            <div class="space-y-8">
+                <!-- Balance Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Account Summary</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Current Balance</span>
+                            <span id="summary-balance" class="font-bold text-gray-800">0 HAQ</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Wallet Number</span>
+                            <span id="summary-wallet" class="font-mono text-sm text-gray-800">Loading...</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Account Status</span>
+                            <span id="account-status" class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Quick Links</h3>
+                        <div class="space-y-2">
+                            <a href="index.html" class="block text-blue-500 hover:text-blue-700 transition duration-300">Go to Dashboard</a>
+                            <a href="history.html" class="block text-blue-500 hover:text-blue-700 transition duration-300">View Transaction History</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
+                    
+                    <div id="recent-activity" class="space-y-4">
+                        <!-- Recent activity will be loaded here -->
+                        <div class="text-center py-4 text-gray-500">
+                            <p>No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg hidden z-50"></div>
+
+    <script>
+        // Three.js Background Animation
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('threejs-bg').appendChild(renderer.domElement);
+
+        // Create a geometric background
+        const geometry = new THREE.OctahedronGeometry(2, 0);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x3b82f6, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        const octahedron = new THREE.Mesh(geometry, material);
+        scene.add(octahedron);
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            octahedron.rotation.x += 0.01;
+            octahedron.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // User data and functions
+        let currentUser = null;
+        let transactions = [];
+        let transactionsChart = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    displayUserInfo();
+                    loadTransactions();
+                } else {
+                    window.location.href = 'register-login.html';
+                }
+            } catch (error) {
+                window.location.href = 'register-login.html';
+            }
+        }
+
+        // Display user information
+        function displayUserInfo() {
+            document.getElementById('user-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+            document.getElementById('user-balance').textContent = `${currentUser.balance} HAQ`;
+            document.getElementById('user-info').classList.remove('hidden');
+            
+            // Profile view
+            document.getElementById('profile-avatar').src = currentUser.avatar || 'https://via.placeholder.com/80';
+            document.getElementById('profile-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+            document.getElementById('profile-username').textContent = `@${currentUser.username}`;
+            document.getElementById('profile-wallet').textContent = currentUser.walletNumber;
+            document.getElementById('profile-bio').textContent = currentUser.bio || 'No bio provided';
+            document.getElementById('profile-joined').textContent = new Date(currentUser.createdAt).toLocaleDateString();
+            
+            // Social links
+            const socialContainer = document.getElementById('profile-social');
+            socialContainer.innerHTML = '';
+            
+            if (currentUser.socialLinks) {
+                if (currentUser.socialLinks.facebook) {
+                    socialContainer.innerHTML += `
+                        <a href="${currentUser.socialLinks.facebook}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </a>
+                    `;
+                }
+                
+                if (currentUser.socialLinks.twitter) {
+                    socialContainer.innerHTML += `
+                        <a href="${currentUser.socialLinks.twitter}" target="_blank" class="text-blue-400 hover:text-blue-600">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.016 10.016 0 01-3.127 1.184 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                            </svg>
+                        </a>
+                    `;
+                }
+                
+                if (currentUser.socialLinks.instagram) {
+                    socialContainer.innerHTML += `
+                        <a href="${currentUser.socialLinks.instagram}" target="_blank" class="text-pink-600 hover:text-pink-800">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                        </a>
+                    `;
+                }
+            }
+            
+            if (socialContainer.innerHTML === '') {
+                socialContainer.innerHTML = '<p class="text-gray-500 text-sm">No social links added</p>';
+            }
+            
+            // Account summary
+            document.getElementById('summary-balance').textContent = `${currentUser.balance} HAQ`;
+            document.getElementById('summary-wallet').textContent = currentUser.walletNumber;
+            
+            if (currentUser.isFrozen) {
+                document.getElementById('account-status').textContent = 'Frozen';
+                document.getElementById('account-status').className = 'px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full';
+            }
+            
+            // Edit form
+            document.getElementById('edit-firstName').value = currentUser.firstName;
+            document.getElementById('edit-lastName').value = currentUser.lastName;
+            document.getElementById('edit-avatar').value = currentUser.avatar || '';
+            document.getElementById('edit-bio').value = currentUser.bio || '';
+            
+            if (currentUser.socialLinks) {
+                document.getElementById('edit-facebook').value = currentUser.socialLinks.facebook || '';
+                document.getElementById('edit-twitter').value = currentUser.socialLinks.twitter || '';
+                document.getElementById('edit-instagram').value = currentUser.socialLinks.instagram || '';
+            }
+        }
+
+        // Load transactions
+        async function loadTransactions() {
+            try {
+                const response = await fetch('/api/transactions');
+                if (response.ok) {
+                    transactions = await response.json();
+                    calculateStatistics();
+                    displayRecentActivity();
+                }
+            } catch (error) {
+                console.error('Failed to load transactions:', error);
+            }
+        }
+
+        // Calculate financial statistics
+        function calculateStatistics() {
+            let totalIncome = 0;
+            let totalExpenses = 0;
+            
+            transactions.forEach(transaction => {
+                if (transaction.status === 'approved') {
+                    if (transaction.toUser && transaction.toUser._id === currentUser._id) {
+                        totalIncome += transaction.amount;
+                    }
+                    
+                    if (transaction.fromUser && transaction.fromUser._id === currentUser._id) {
+                        totalExpenses += transaction.amount;
+                    }
+                }
+            });
+            
+            document.getElementById('total-income').textContent = `${totalIncome.toFixed(2)} HAQ`;
+            document.getElementById('total-expenses').textContent = `${totalExpenses.toFixed(2)} HAQ`;
+            document.getElementById('net-balance').textContent = `${(totalIncome - totalExpenses).toFixed(2)} HAQ`;
+            
+            // Create chart
+            createTransactionsChart(totalIncome, totalExpenses);
+        }
+
+        // Create transactions chart
+        function createTransactionsChart(income, expenses) {
+            const ctx = document.getElementById('transactions-chart').getContext('2d');
+            
+            if (transactionsChart) {
+                transactionsChart.destroy();
+            }
+            
+            transactionsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{
+                        data: [income, expenses],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Display recent activity
+        function displayRecentActivity() {
+            const container = document.getElementById('recent-activity');
+            const recentTransactions = transactions.slice(0, 3); // Show only 3 most recent
+            
+            if (recentTransactions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        <p>No recent activity</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recentTransactions.map(transaction => {
+                const isOutgoing = transaction.fromUser && transaction.fromUser._id === currentUser._id;
+                const otherUser = isOutgoing ? transaction.toUser : transaction.fromUser;
+                const amountClass = isOutgoing ? 'text-red-500' : 'text-green-500';
+                const amountPrefix = isOutgoing ? '-' : '+';
+                const typeText = isOutgoing ? 'To' : 'From';
+                
+                let statusBadge = '';
+                if (transaction.status === 'pending') {
+                    statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Pending</span>';
+                } else if (transaction.status === 'approved') {
+                    statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Completed</span>';
+                } else if (transaction.status === 'rejected') {
+                    statusBadge = '<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Rejected</span>';
+                }
+                
+                return `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-800">${typeText} ${otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Admin'}</p>
+                            <p class="text-sm text-gray-500">${new Date(transaction.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold ${amountClass}">${amountPrefix}${transaction.amount} HAQ</p>
+                            <div class="mt-1">${statusBadge}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show Notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Edit profile functionality
+        document.getElementById('edit-profile-btn').addEventListener('click', function() {
+            document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('profile-form').classList.remove('hidden');
+        });
+
+        document.getElementById('cancel-edit').addEventListener('click', function() {
+            document.getElementById('profile-form').classList.add('hidden');
+            document.getElementById('profile-view').classList.remove('hidden');
+        });
+
+        // Submit profile form
+        document.getElementById('profile-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                firstName: document.getElementById('edit-firstName').value,
+                lastName: document.getElementById('edit-lastName').value,
+                avatar: document.getElementById('edit-avatar').value,
+                bio: document.getElementById('edit-bio').value,
+                socialLinks: {
+                    facebook: document.getElementById('edit-facebook').value,
+                    twitter: document.getElementById('edit-twitter').value,
+                    instagram: document.getElementById('edit-instagram').value
+                }
+            };
+            
+            try {
+                const response = await fetch('/api/user', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    displayUserInfo();
+                    document.getElementById('profile-form').classList.add('hidden');
+                    document.getElementById('profile-view').classList.remove('hidden');
+                    showNotification('Profile updated successfully!');
+                } else {
+                    showNotification(data.error || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error. Please try again.', 'error');
+            }
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async function() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = 'register-login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        });
+
+        // Initialize page
+        checkAuth();
+    </script>
+</body>
+</html>

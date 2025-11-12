@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - Online Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(-45deg, #1e3c72, #2a5298, #1e3c72, #2a5298);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div id="threejs-bg" class="fixed inset-0 z-0"></div>
+    
+    <!-- Navigation -->
+    <nav class="relative z-10 bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg py-4 px-6 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-blue-500 rounded-full"></div>
+                <span class="text-white text-xl font-bold">Online Bank</span>
+            </div>
+            
+            <div class="hidden md:flex space-x-6">
+                <a href="index.html" class="text-white font-semibold hover:text-blue-200 transition">Dashboard</a>
+                <a href="history.html" class="text-white font-semibold border-b-2 border-blue-400">History</a>
+                <a href="profile.html" class="text-white font-semibold hover:text-blue-200 transition">Profile</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div id="user-info" class="text-white hidden">
+                    <span id="user-name" class="font-semibold"></span>
+                    <span id="user-balance" class="ml-2 bg-blue-500 px-2 py-1 rounded-full text-xs"></span>
+                </div>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="relative z-10 container mx-auto py-8 px-4">
+        <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl p-6 mb-8 text-white">
+            <h1 class="text-3xl font-bold mb-2">Transaction History</h1>
+            <p class="text-blue-200">View all your financial activities in one place</p>
+        </div>
+        
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 card-hover">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <h2 class="text-xl font-bold text-gray-800">Filter Transactions</h2>
+                
+                <div class="flex flex-wrap gap-4">
+                    <select id="type-filter" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2">
+                        <option value="all">All Types</option>
+                        <option value="transfer">Transfers</option>
+                        <option value="deposit">Deposits</option>
+                    </select>
+                    
+                    <select id="status-filter" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2">
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Completed</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    
+                    <button id="reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Transactions List -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+            <div id="transactions-container">
+                <!-- Transactions will be loaded here -->
+                <div class="text-center py-12 text-gray-500">
+                    <svg class="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    <p class="mt-4 text-lg">No transactions found</p>
+                    <p class="mt-2">Your transaction history will appear here</p>
+                </div>
+            </div>
+            
+            <!-- Loading indicator -->
+            <div id="loading-indicator" class="text-center py-8 hidden">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <p class="mt-2 text-gray-500">Loading transactions...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transaction Details Modal -->
+    <div id="transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Transaction Details</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="transaction-details">
+                <!-- Transaction details will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg hidden z-50"></div>
+
+    <script>
+        // Three.js Background Animation
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('threejs-bg').appendChild(renderer.domElement);
+
+        // Create a geometric background
+        const geometry = new THREE.IcosahedronGeometry(2, 0);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x3b82f6, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        const icosahedron = new THREE.Mesh(geometry, material);
+        scene.add(icosahedron);
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            icosahedron.rotation.x += 0.01;
+            icosahedron.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // User data and functions
+        let currentUser = null;
+        let allTransactions = [];
+        let filteredTransactions = [];
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    displayUserInfo();
+                    loadTransactions();
+                } else {
+                    window.location.href = 'register-login.html';
+                }
+            } catch (error) {
+                window.location.href = 'register-login.html';
+            }
+        }
+
+        // Display user information
+        function displayUserInfo() {
+            document.getElementById('user-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+            document.getElementById('user-balance').textContent = `${currentUser.balance} HAQ`;
+            document.getElementById('user-info').classList.remove('hidden');
+        }
+
+        // Load all transactions
+        async function loadTransactions() {
+            document.getElementById('loading-indicator').classList.remove('hidden');
+            
+            try {
+                const response = await fetch('/api/transactions');
+                if (response.ok) {
+                    allTransactions = await response.json();
+                    applyFilters();
+                }
+            } catch (error) {
+                console.error('Failed to load transactions:', error);
+                showNotification('Failed to load transactions', 'error');
+            } finally {
+                document.getElementById('loading-indicator').classList.add('hidden');
+            }
+        }
+
+        // Apply filters to transactions
+        function applyFilters() {
+            const typeFilter = document.getElementById('type-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            filteredTransactions = allTransactions.filter(transaction => {
+                // Type filter
+                if (typeFilter !== 'all' && transaction.type !== typeFilter) {
+                    return false;
+                }
+                
+                // Status filter
+                if (statusFilter !== 'all' && transaction.status !== statusFilter) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            displayTransactions(filteredTransactions);
+        }
+
+        // Display transactions
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactions-container');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <p class="mt-4 text-lg">No transactions found</p>
+                        <p class="mt-2">Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = transactions.map((transaction, index) => {
+                const isOutgoing = transaction.fromUser && transaction.fromUser._id === currentUser._id;
+                const otherUser = isOutgoing ? transaction.toUser : transaction.fromUser;
+                const amountClass = isOutgoing ? 'text-red-500' : 'text-green-500';
+                const amountPrefix = isOutgoing ? '-' : '+';
+                const typeText = isOutgoing ? 'To' : 'From';
+                
+                let statusBadge = '';
+                if (transaction.status === 'pending') {
+                    statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Pending</span>';
+                } else if (transaction.status === 'approved') {
+                    statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Completed</span>';
+                } else if (transaction.status === 'rejected') {
+                    statusBadge = '<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Rejected</span>';
+                }
+                
+                return `
+                    <div class="transaction-item fade-in border border-gray-100 rounded-lg mb-4 hover:bg-gray-50 transition duration-300 cursor-pointer" data-id="${transaction._id}">
+                        <div class="flex items-center justify-between p-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 ${isOutgoing ? 'bg-red-100' : 'bg-green-100'} rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 ${isOutgoing ? 'text-red-500' : 'text-green-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${isOutgoing ? 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' : 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'}"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">${typeText} ${otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Admin'}</p>
+                                    <p class="text-sm text-gray-500">${new Date(transaction.createdAt).toLocaleDateString()} • ${transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}</p>
+                                    ${transaction.description ? `<p class="text-sm text-gray-600 mt-1">${transaction.description}</p>` : ''}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-lg ${amountClass}">${amountPrefix}${transaction.amount} HAQ</p>
+                                <div class="mt-1">${statusBadge}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add click event to transaction items
+            document.querySelectorAll('.transaction-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const transactionId = this.getAttribute('data-id');
+                    showTransactionDetails(transactionId);
+                });
+            });
+        }
+
+        // Show transaction details in modal
+        function showTransactionDetails(transactionId) {
+            const transaction = allTransactions.find(t => t._id === transactionId);
+            if (!transaction) return;
+            
+            const isOutgoing = transaction.fromUser && transaction.fromUser._id === currentUser._id;
+            const otherUser = isOutgoing ? transaction.toUser : transaction.fromUser;
+            const amountClass = isOutgoing ? 'text-red-500' : 'text-green-500';
+            const amountPrefix = isOutgoing ? '-' : '+';
+            const typeText = isOutgoing ? 'To' : 'From';
+            
+            let statusText = '';
+            let statusColor = '';
+            if (transaction.status === 'pending') {
+                statusText = 'Pending Approval';
+                statusColor = 'text-yellow-600 bg-yellow-100';
+            } else if (transaction.status === 'approved') {
+                statusText = 'Completed';
+                statusColor = 'text-green-600 bg-green-100';
+            } else if (transaction.status === 'rejected') {
+                statusText = 'Rejected';
+                statusColor = 'text-red-600 bg-red-100';
+            }
+            
+            const detailsHtml = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Transaction ID:</span>
+                        <span class="font-mono text-sm">${transaction._id}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Date:</span>
+                        <span>${new Date(transaction.createdAt).toLocaleString()}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Type:</span>
+                        <span class="capitalize">${transaction.type}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Status:</span>
+                        <span class="px-2 py-1 rounded-full ${statusColor}">${statusText}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Amount:</span>
+                        <span class="font-bold text-lg ${amountClass}">${amountPrefix}${transaction.amount} HAQ</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-600">${typeText}:</span>
+                        <div class="text-right">
+                            <p class="font-semibold">${otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Admin'}</p>
+                            ${otherUser ? `<p class="text-sm text-gray-500">${otherUser.walletNumber}</p>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${transaction.description ? `
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-600">Description:</span>
+                        <span class="text-right">${transaction.description}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${transaction.screenshot ? `
+                    <div class="flex justify-between items-start">
+                        <span class="text-gray-600">Screenshot:</span>
+                        <div class="text-right">
+                            <img src="${transaction.screenshot}" alt="Payment screenshot" class="w-32 h-32 object-cover rounded-lg border">
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('transaction-details').innerHTML = detailsHtml;
+            document.getElementById('transaction-modal').classList.remove('hidden');
+        }
+
+        // Show Notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Event listeners for filters
+        document.getElementById('type-filter').addEventListener('change', applyFilters);
+        document.getElementById('status-filter').addEventListener('change', applyFilters);
+        document.getElementById('reset-filters').addEventListener('click', function() {
+            document.getElementById('type-filter').value = 'all';
+            document.getElementById('status-filter').value = 'all';
+            applyFilters();
+        });
+
+        // Close modal
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('transaction-modal').classList.add('hidden');
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async function() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = 'register-login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        });
+
+        // Initialize page
+        checkAuth();
+    </script>
+</body>
+</html>

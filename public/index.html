@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Online Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(-45deg, #1e3c72, #2a5298, #1e3c72, #2a5298);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+       
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+       
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+       
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+       
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+       
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div id="threejs-bg" class="fixed inset-0 z-0"></div>
+   
+    <!-- Navigation -->
+    <nav class="relative z-10 bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg py-4 px-6 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-blue-500 rounded-full"></div>
+                <span class="text-white text-xl font-bold">Online Bank</span>
+            </div>
+           
+            <div class="hidden md:flex space-x-6">
+                <a href="index.html" class="text-white font-semibold border-b-2 border-blue-400">Dashboard</a>
+                <a href="history.html" class="text-white font-semibold hover:text-blue-200 transition">History</a>
+                <a href="profile.html" class="text-white font-semibold hover:text-blue-200 transition">Profile</a>
+            </div>
+           
+            <div class="flex items-center space-x-4">
+                <div id="user-info" class="text-white hidden">
+                    <span id="user-name" class="font-semibold"></span>
+                    <span id="user-balance" class="ml-2 bg-blue-500 px-2 py-1 rounded-full text-xs"></span>
+                </div>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+   
+    <div class="relative z-10 container mx-auto py-8 px-4">
+        <!-- HAQ Value Display (konvertatsiya qo'shildi, tartiblangan) -->
+        <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl p-6 mb-8 text-white text-center card-hover">
+            <h2 class="text-2xl font-bold mb-2">HAQ Value & Conversions</h2>
+            <div class="flex justify-center items-center space-x-4 mb-4">
+                <span id="haq-value" class="text-4xl font-bold">1.00</span>
+                <span id="haq-change" class="text-lg px-3 py-1 rounded-full">0.00%</span>
+            </div>
+            <p class="mt-2 text-blue-200 mb-4">HAQ is our exclusive currency with dynamic value</p>
+            <!-- Konvertatsiya ko'rsatish (tartiblangan) -->
+            <div id="conversions-display" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <!-- Dynamic load bo'ladi -->
+            </div>
+        </div>
+       
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Balance and Quick Actions (withdrawal tugmasi qo'shildi) -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- Balance Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Your Balance</h3>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-3xl font-bold text-gray-900" id="balance-amount">0 HAQ</p>
+                            <p class="text-gray-500 mt-1" id="wallet-number">Wallet: Loading...</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+               
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h3>
+                    <div class="space-y-4">
+                        <button id="transfer-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                            <span>Transfer Money</span>
+                        </button>
+                       
+                        <button id="deposit-btn" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <span>Deposit Funds</span>
+                        </button>
+                       
+                        <button id="withdrawal-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <span>Withdraw Funds</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+           
+            <!-- Right Column - Recent Transactions (o'zgarmadi) -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Recent Transactions</h3>
+                        <a href="history.html" class="text-blue-500 hover:text-blue-700 font-medium">View All</a>
+                    </div>
+                   
+                    <div id="transactions-list" class="space-y-4">
+                        <div class="text-center py-8 text-gray-500">
+                            <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            <p class="mt-2">No transactions yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <!-- Transfer Modal (yangi: NewEra select qo'shildi) -->
+<div id="transfer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Transfer Money</h3>
+       
+        <form id="transfer-form">
+            <!-- Yangi: Transfer turi select -->
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="transfer-type">
+                    Transfer Type
+                </label>
+                <select id="transfer-type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    <option value="internal">Internal (Wallet Number)</option>
+                    <option value="newera">NewEra User (Username)</option>
+                </select>
+            </div>
+           
+            <!-- Internal Wallet Input -->
+            <div id="internal-group" class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="to-wallet">
+                    Recipient Wallet Number
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       id="to-wallet" type="text" placeholder="HAQ0123456789012" required>
+                <div id="recipient-info" class="mt-2 hidden">
+                    <div class="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
+                        <img id="recipient-avatar" src="" alt="" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p id="recipient-name" class="font-semibold text-gray-800"></p>
+                            <p id="recipient-wallet" class="text-sm text-gray-600"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+           
+            <!-- NewEra Username Input -->
+            <div id="newera-group" class="mb-4 hidden">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="newera-username">
+                    NewEra Username
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       id="newera-username" type="text" placeholder="Enter NewEra username" required>
+                <div id="newera-profile" class="mt-2 hidden bg-blue-50 p-3 rounded-lg">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <img id="newera-avatar" src="" alt="" class="w-10 h-10 rounded-full">
+                        <div>
+                            <p id="newera-name" class="font-semibold text-gray-800"></p>
+                            <p id="newera-bio" class="text-sm text-gray-600"></p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                        <div>Followers: <span id="newera-followers" class="font-bold"></span></div>
+                        <div>Following: <span id="newera-following" class="font-bold"></span></div>
+                        <div>Posts: <span id="newera-posts" class="font-bold"></span></div>
+                        <div>Balance: <span id="newera-balance" class="font-bold text-green-600"></span></div>
+                        <div>Coins: <span id="newera-coins" class="font-bold text-blue-600"></span></div>
+                    </div>
+                </div>
+            </div>
+           
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
+                    Amount (HAQ)
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       id="amount" type="number" step="0.01" min="0.01" required>
+            </div>
+           
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
+                    Description (Optional)
+                </label>
+                <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          id="description" rows="2" placeholder="Add a note"></textarea>
+            </div>
+           
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="cancel-transfer" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                    Transfer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+   
+    <!-- Deposit Modal (kengaytirildi: paymentMethod select va externalDetails input) -->
+    <div id="deposit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Deposit Funds</h3>
+           
+            <form id="deposit-form" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="deposit-amount">
+                        Amount (HAQ)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="deposit-amount" type="number" step="0.01" min="0.01" required>
+                </div>
+               
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="payment-method">
+                        Payment Method
+                    </label>
+                    <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="payment-method" required>
+                        <option value="">Select Method</option>
+                        <option value="payeer">Payeer</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="btc">Bitcoin (BTC)</option>
+                        <option value="eth">Ethereum (ETH)</option>
+                        <option value="usdt">USDT (TRC20)</option>
+                        <option value="uzcard">UzCard</option>
+                    </select>
+                </div>
+               
+                <div class="mb-4" id="external-details-group">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="external-details">
+                        Account Details (Email/Wallet Address)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="external-details" type="text" placeholder="Enter your Payeer email or BTC address" required>
+                </div>
+               
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="screenshot">
+                        Payment Screenshot
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="screenshot" type="file" accept="image/*" required>
+                    <p class="text-xs text-gray-500 mt-1">Upload a screenshot of your payment</p>
+                </div>
+               
+                <div id="provider-details" class="mb-4 hidden p-4 bg-yellow-50 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Admin Payment Details for Selected Method:</strong><br>
+                        <span id="admin-details">Select a method to see details</span>
+                    </p>
+                </div>
+               
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancel-deposit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                        Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+   
+    <!-- Withdrawal Modal (yangi) -->
+    <div id="withdrawal-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Withdraw Funds</h3>
+           
+            <form id="withdrawal-form" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-amount">
+                        Amount (HAQ)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="withdrawal-amount" type="number" step="0.01" min="0.01" required>
+                </div>
+               
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-method">
+                        Payment Method
+                    </label>
+                    <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="withdrawal-method" required>
+                        <option value="">Select Method</option>
+                        <option value="payeer">Payeer</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="btc">Bitcoin (BTC)</option>
+                        <option value="eth">Ethereum (ETH)</option>
+                        <option value="usdt">USDT (TRC20)</option>
+                        <option value="uzcard">UzCard</option>
+                    </select>
+                </div>
+               
+                <div class="mb-4" id="withdrawal-external-details-group">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-external-details">
+                        Account Details (Email/Wallet Address)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="withdrawal-external-details" type="text" placeholder="Enter your Payeer email or BTC address" required>
+                </div>
+               
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-screenshot">
+                        Proof of Request (Optional Screenshot)
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="withdrawal-screenshot" type="file" accept="image/*">
+                    <p class="text-xs text-gray-500 mt-1">Optional proof for your request</p>
+                </div>
+               
+                <div id="withdrawal-provider-details" class="mb-4 hidden p-4 bg-orange-50 rounded-lg">
+                    <p class="text-sm text-orange-800">
+                        <strong>Admin will send to your details after approval.</strong>
+                    </p>
+                </div>
+               
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancel-withdrawal" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                        Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+   
+    <!-- Notification -->
+    <div id="notification" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg hidden z-50"></div>
+    <script>
+        // Three.js Background Animation (o'zgarmadi)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('threejs-bg').appendChild(renderer.domElement);
+        const geometry = new THREE.TorusGeometry(2, 0.5, 16, 100);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x3b82f6,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        const torus = new THREE.Mesh(geometry, material);
+        scene.add(torus);
+        camera.position.z = 5;
+        function animate() {
+            requestAnimationFrame(animate);
+            torus.rotation.x += 0.01;
+            torus.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        // User data and functions
+        let currentUser = null;
+        let conversionRates = [];
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    displayUserInfo();
+                    loadTransactions();
+                    loadHaqValue();
+                    loadConversions();
+                } else {
+                    window.location.href = 'register-login.html';
+                }
+            } catch (error) {
+                window.location.href = 'register-login.html';
+            }
+        }
+        // Display user information
+        function displayUserInfo() {
+            document.getElementById('user-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+            document.getElementById('user-balance').textContent = `${currentUser.balance.toFixed(2)} HAQ`;
+            document.getElementById('balance-amount').textContent = `${currentUser.balance.toFixed(2)} HAQ`;
+            document.getElementById('wallet-number').textContent = `Wallet: ${currentUser.walletNumber}`;
+            document.getElementById('user-info').classList.remove('hidden');
+        }
+        // Load recent transactions (o'zgarmadi)
+        async function loadTransactions() {
+            try {
+                const response = await fetch('/api/transactions');
+                if (response.ok) {
+                    const transactions = await response.json();
+                    displayTransactions(transactions.slice(0, 5));
+                }
+            } catch (error) {
+                console.error('Failed to load transactions:', error);
+            }
+        }
+        // Display transactions (paymentMethod ko'rsatish qo'shildi)
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactions-list');
+           
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <p class="mt-2">No transactions yet</p>
+                    </div>
+                `;
+                return;
+            }
+           
+            container.innerHTML = transactions.map(transaction => {
+                const isOutgoing = transaction.fromUser && transaction.fromUser._id === currentUser._id;
+                const otherUser = isOutgoing ? transaction.toUser : transaction.fromUser;
+                const amountClass = isOutgoing ? 'text-red-500' : 'text-green-500';
+                const amountPrefix = isOutgoing ? '-' : '+';
+                const typeText = isOutgoing ? 'To' : 'From';
+               
+                let statusBadge = '';
+                if (transaction.status === 'pending') {
+                    statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Pending</span>';
+                } else if (transaction.status === 'approved') {
+                    statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Completed</span>';
+                } else if (transaction.status === 'rejected') {
+                    statusBadge = '<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Rejected</span>';
+                }
+               
+                const methodText = transaction.paymentMethod ? `(${transaction.paymentMethod.toUpperCase()})` : '';
+               
+                return `
+                    <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition duration-300">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 ${isOutgoing ? 'bg-red-100' : 'bg-green-100'} rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 ${isOutgoing ? 'text-red-500' : 'text-green-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${isOutgoing ? 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' : 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'}"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">${typeText} ${otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'Admin'} ${methodText}</p>
+                                <p class="text-sm text-gray-500">${new Date(transaction.createdAt).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold ${amountClass}">${amountPrefix}${transaction.amount.toFixed(2)} HAQ</p>
+                            <div class="mt-1">${statusBadge}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        // Load HAQ value (to'g'irlangan: % ko'rsatish)
+        async function loadHaqValue() {
+            try {
+                const response = await fetch('/api/haq-value');
+                if (response.ok) {
+                    const haqValue = await response.json();
+                    document.getElementById('haq-value').textContent = haqValue.value.toFixed(2);
+                   
+                    const changeElement = document.getElementById('haq-change');
+                    const changePercent = haqValue.change.toFixed(2);
+                    changeElement.textContent = `${changePercent > 0 ? '+' : ''}${changePercent}%`;
+                   
+                    if (haqValue.change > 0) {
+                        changeElement.className = 'text-lg px-3 py-1 rounded-full bg-green-100 text-green-800';
+                    } else if (haqValue.change < 0) {
+                        changeElement.className = 'text-lg px-3 py-1 rounded-full bg-red-100 text-red-800';
+                    } else {
+                        changeElement.className = 'text-lg px-3 py-1 rounded-full bg-gray-100 text-gray-800';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load HAQ value:', error);
+            }
+        }
+        // Load conversions (yangi, tartiblangan)
+        async function loadConversions() {
+            try {
+                const response = await fetch('/api/conversions');
+                if (response.ok) {
+                    conversionRates = await response.json();
+                    displayConversions();
+                }
+            } catch (error) {
+                console.error('Failed to load conversions:', error);
+            }
+        }
+        // Display conversions (to'g'irlangan: formatlangan ko'rinish)
+        function displayConversions() {
+            const container = document.getElementById('conversions-display');
+            if (conversionRates.length === 0) {
+                container.innerHTML = '<p class="col-span-full text-blue-200">No conversions available</p>';
+                return;
+            }
+            container.innerHTML = conversionRates.map(rate => `
+                <div class="bg-gray-800 bg-opacity-20 p-3 rounded-lg">
+                    <p class="font-bold text-white">${rate.currency}</p>
+                    <p class="text-sm text-blue-200">1 HAQ = ${rate.rate.toFixed(4)} ${rate.currency}</p>
+                </div>
+            `).join('');
+        }
+        // Show Notification (o'zgarmadi)
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            notification.classList.remove('hidden');
+           
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+        // Transfer functionality (o'zgarmadi)
+        document.getElementById('transfer-btn').addEventListener('click', function() {
+            document.getElementById('transfer-modal').classList.remove('hidden');
+        });
+        document.getElementById('cancel-transfer').addEventListener('click', function() {
+            document.getElementById('transfer-modal').classList.add('hidden');
+            document.getElementById('transfer-form').reset();
+            document.getElementById('recipient-info').classList.add('hidden');
+        });
+        document.getElementById('to-wallet').addEventListener('input', async function() {
+            const walletNumber = this.value.trim();
+           
+            if (walletNumber.length === 16 && walletNumber.startsWith('HAQ')) {
+                try {
+                    const response = await fetch(`/api/user/wallet/${walletNumber}`);
+                    if (response.ok) {
+                        const user = await response.json();
+                        document.getElementById('recipient-avatar').src = user.avatar || 'https://via.placeholder.com/40';
+                        document.getElementById('recipient-name').textContent = `${user.firstName} ${user.lastName}`;
+                        document.getElementById('recipient-wallet').textContent = user.walletNumber;
+                        document.getElementById('recipient-info').classList.remove('hidden');
+                    } else {
+                        document.getElementById('recipient-info').classList.add('hidden');
+                    }
+                } catch (error) {
+                    document.getElementById('recipient-info').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('recipient-info').classList.add('hidden');
+            }
+        });
+        // Transfer functionality (yangilandi)
+document.getElementById('transfer-type').addEventListener('change', function() {
+    const type = this.value;
+    const internalGroup = document.getElementById('internal-group');
+    const neweraGroup = document.getElementById('newera-group');
+    if (type === 'internal') {
+        internalGroup.classList.remove('hidden');
+        neweraGroup.classList.add('hidden');
+    } else {
+        internalGroup.classList.add('hidden');
+        neweraGroup.classList.remove('hidden');
+    }
+});
+
+// Tuzatilgan kod:
+document.getElementById('newera-username').addEventListener('input', async function() {
+    const username = this.value.trim();
+    const profileDiv = document.getElementById('newera-profile');
+    if (username.length < 3) {
+        profileDiv.classList.add('hidden');
+        return;
+    }
+    try {
+        const response = await fetch(`https://newera-social.onrender.com/api/user/username/${username}`, {
+            headers: {
+                'Authorization': 'Bearer wallet-api-key'  // Token qo'shildi!
+            }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('newera-avatar').src = data.user.avatar || 'https://via.placeholder.com/40';
+                document.getElementById('newera-name').textContent = data.user.fullName;
+                document.getElementById('newera-bio').textContent = data.user.bio;
+                document.getElementById('newera-followers').textContent = data.user.followersCount;
+                document.getElementById('newera-following').textContent = data.user.followingCount;
+                document.getElementById('newera-posts').textContent = data.user.postsCount;
+                document.getElementById('newera-balance').textContent = data.user.balance;
+                document.getElementById('newera-coins').textContent = data.user.coins;
+                profileDiv.classList.remove('hidden');
+            } else {
+                profileDiv.classList.add('hidden');
+            }
+        } else {
+            profileDiv.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('NewEra profile fetch error:', error);
+        profileDiv.classList.add('hidden');
+    }
+});
+
+document.getElementById('transfer-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+   
+    const type = document.getElementById('transfer-type').value;
+    const formData = {
+        amount: parseFloat(document.getElementById('amount').value),
+        description: document.getElementById('description').value
+    };
+   
+    if (type === 'internal') {
+        formData.toWallet = document.getElementById('to-wallet').value;
+    } else {
+        formData.neweraUsername = document.getElementById('newera-username').value;
+    }
+   
+    try {
+        const response = await fetch('/api/transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+       
+        const data = await response.json();
+       
+        if (data.success) {
+            showNotification(`${type === 'internal' ? 'Internal' : 'NewEra'} transfer request submitted successfully!`);
+            document.getElementById('transfer-modal').classList.add('hidden');
+            document.getElementById('transfer-form').reset();
+            document.getElementById('recipient-info').classList.add('hidden');
+            document.getElementById('newera-profile').classList.add('hidden');
+            checkAuth();
+        } else {
+            showNotification(data.error || 'Transfer failed', 'error');
+        }
+    } catch (error) {
+        showNotification('Network error. Please try again.', 'error');
+    }
+});
+        // Deposit functionality (kengaytirildi)
+        document.getElementById('deposit-btn').addEventListener('click', function() {
+            document.getElementById('deposit-modal').classList.remove('hidden');
+        });
+        document.getElementById('cancel-deposit').addEventListener('click', function() {
+            document.getElementById('deposit-modal').classList.add('hidden');
+            document.getElementById('deposit-form').reset();
+            document.getElementById('provider-details').classList.add('hidden');
+        });
+        // Payment method o'zgarganda admin details ko'rsatish
+        document.getElementById('payment-method').addEventListener('change', function() {
+            const method = this.value;
+            const detailsGroup = document.getElementById('external-details-group');
+            const providerDetails = document.getElementById('provider-details');
+           
+            if (method) {
+                detailsGroup.classList.remove('hidden');
+                let adminDetails = '';
+                switch (method) {
+                    case 'payeer':
+                        adminDetails = 'Payeer Email: admin@payeer.com';
+                        break;
+                    case 'paypal':
+                        adminDetails = 'PayPal Email: admin@paypal.com';
+                        break;
+                    case 'btc':
+                        adminDetails = 'BTC Address: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
+                        break;
+                    case 'eth':
+                        adminDetails = 'ETH Address: 0x742d35Cc6f9eE8E4e7a8c7b5e6d4c3b2a1f0e9d8';
+                        break;
+                    case 'usdt':
+                        adminDetails = 'USDT (TRC20) Address: TQn8zH6WRYKv3z8n7Y12eF6gH5j4k3i2l1m0n';
+                        break;
+                    case 'uzcard':
+                        adminDetails = 'UzCard: 9860 1234 5678 9012';
+                        break;
+                    default:
+                        adminDetails = 'Select a method to see details';
+                }
+                document.getElementById('admin-details').textContent = adminDetails;
+                providerDetails.classList.remove('hidden');
+            } else {
+                detailsGroup.classList.add('hidden');
+                providerDetails.classList.add('hidden');
+            }
+        });
+        document.getElementById('deposit-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+           
+            const formData = new FormData();
+            formData.append('amount', document.getElementById('deposit-amount').value);
+            formData.append('paymentMethod', document.getElementById('payment-method').value);
+            formData.append('externalDetails', document.getElementById('external-details').value);
+            formData.append('screenshot', document.getElementById('screenshot').files[0]);
+           
+            try {
+                const response = await fetch('/api/deposit', {
+                    method: 'POST',
+                    body: formData
+                });
+               
+                const data = await response.json();
+               
+                if (data.success) {
+                    showNotification('Deposit request submitted successfully! It will be processed after admin approval.');
+                    document.getElementById('deposit-modal').classList.add('hidden');
+                    document.getElementById('deposit-form').reset();
+                    document.getElementById('provider-details').classList.add('hidden');
+                    document.getElementById('external-details-group').classList.add('hidden');
+                } else {
+                    showNotification(data.error || 'Deposit request failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error. Please try again.', 'error');
+            }
+        });
+        // Withdrawal functionality (yangi)
+        document.getElementById('withdrawal-btn').addEventListener('click', function() {
+            document.getElementById('withdrawal-modal').classList.remove('hidden');
+        });
+        document.getElementById('cancel-withdrawal').addEventListener('click', function() {
+            document.getElementById('withdrawal-modal').classList.add('hidden');
+            document.getElementById('withdrawal-form').reset();
+            document.getElementById('withdrawal-provider-details').classList.add('hidden');
+            document.getElementById('withdrawal-external-details-group').classList.add('hidden');
+        });
+        document.getElementById('withdrawal-method').addEventListener('change', function() {
+            const method = this.value;
+            const detailsGroup = document.getElementById('withdrawal-external-details-group');
+            const providerDetails = document.getElementById('withdrawal-provider-details');
+           
+            if (method) {
+                detailsGroup.classList.remove('hidden');
+                providerDetails.classList.remove('hidden');
+            } else {
+                detailsGroup.classList.add('hidden');
+                providerDetails.classList.add('hidden');
+            }
+        });
+        document.getElementById('withdrawal-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+           
+            const formData = new FormData();
+            formData.append('amount', document.getElementById('withdrawal-amount').value);
+            formData.append('paymentMethod', document.getElementById('withdrawal-method').value);
+            formData.append('externalDetails', document.getElementById('withdrawal-external-details').value);
+            if (document.getElementById('withdrawal-screenshot').files[0]) {
+                formData.append('screenshot', document.getElementById('withdrawal-screenshot').files[0]);
+            }
+           
+            try {
+                const response = await fetch('/api/withdrawal', {
+                    method: 'POST',
+                    body: formData
+                });
+               
+                const data = await response.json();
+               
+                if (data.success) {
+                    showNotification('Withdrawal request submitted successfully! It will be processed after admin approval.');
+                    document.getElementById('withdrawal-modal').classList.add('hidden');
+                    document.getElementById('withdrawal-form').reset();
+                    document.getElementById('withdrawal-provider-details').classList.add('hidden');
+                    document.getElementById('withdrawal-external-details-group').classList.add('hidden');
+                    checkAuth(); // Balansni yangilash
+                } else {
+                    showNotification(data.error || 'Withdrawal request failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error. Please try again.', 'error');
+            }
+        });
+        // Logout (o'zgarmadi)
+        document.getElementById('logout-btn').addEventListener('click', async function() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = 'register-login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        });
+        // Initialize page
+        checkAuth();
+       
+        setInterval(loadHaqValue, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "online-bank",
+  "version": "1.0.0",
+  "description": "Mini online banking system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.0.3",
+    "bcryptjs": "^2.4.3",
+    "multer": "^1.4.5-lts.1",
+    "express-session": "^1.17.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
