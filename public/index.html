@@ -407,7 +407,7 @@
         // Check authentication
         async function checkAuth() {
             try {
-                const response = await fetch('/api/user');
+                const response = await fetch('https://wallet-uz.onrender.com/api/user');
                 if (response.ok) {
                     currentUser = await response.json();
                     displayUserInfo();
@@ -432,7 +432,7 @@
         // Load recent transactions (o'zgarmadi)
         async function loadTransactions() {
             try {
-                const response = await fetch('/api/transactions');
+                const response = await fetch('https://wallet-uz.onrender.com/api/transactions');
                 if (response.ok) {
                     const transactions = await response.json();
                     displayTransactions(transactions.slice(0, 5));
@@ -499,7 +499,7 @@
         // Load HAQ value (to'g'irlangan: % ko'rsatish)
         async function loadHaqValue() {
             try {
-                const response = await fetch('/api/haq-value');
+                const response = await fetch('https://wallet-uz.onrender.com/api/haq-value');
                 if (response.ok) {
                     const haqValue = await response.json();
                     document.getElementById('haq-value').textContent = haqValue.value.toFixed(2);
@@ -523,7 +523,7 @@
         // Load conversions (yangi, tartiblangan)
         async function loadConversions() {
             try {
-                const response = await fetch('/api/conversions');
+                const response = await fetch('https://wallet-uz.onrender.com/api/conversions');
                 if (response.ok) {
                     conversionRates = await response.json();
                     displayConversions();
@@ -571,7 +571,7 @@
            
             if (walletNumber.length === 16 && walletNumber.startsWith('HAQ')) {
                 try {
-                    const response = await fetch(`/api/user/wallet/${walletNumber}`);
+                    const response = await fetch(`https://wallet-uz.onrender.com/api/user/wallet/${walletNumber}`);
                     if (response.ok) {
                         const user = await response.json();
                         document.getElementById('recipient-avatar').src = user.avatar || 'https://via.placeholder.com/40';
@@ -656,7 +656,7 @@ document.getElementById('transfer-form').addEventListener('submit', async functi
     }
    
     try {
-        const response = await fetch('/api/transaction', {
+        const response = await fetch('https://wallet-uz.onrender.com/api/transaction', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -713,7 +713,7 @@ document.getElementById('transfer-form').addEventListener('submit', async functi
                         adminDetails = 'USDT (TRC20) Address: TQn8zH6WRYKv3z8n7Y12eF6gH5j4k3i2l1m0n';
                         break;
                     case 'uzcard':
-                        adminDetails = 'UzCard: 9860 1234 5678 9012';
+                        adminDetails = 'UzCard: 9860 1234 5678 9012 hali tayyor emas';
                         break;
                     default:
                         adminDetails = 'Select a method to see details';
@@ -735,7 +735,7 @@ document.getElementById('transfer-form').addEventListener('submit', async functi
             formData.append('screenshot', document.getElementById('screenshot').files[0]);
            
             try {
-                const response = await fetch('/api/deposit', {
+                const response = await fetch('https://wallet-uz.onrender.com/api/deposit', {
                     method: 'POST',
                     body: formData
                 });
@@ -790,7 +790,7 @@ document.getElementById('transfer-form').addEventListener('submit', async functi
             }
            
             try {
-                const response = await fetch('/api/withdrawal', {
+                const response = await fetch('https://wallet-uz.onrender.com/api/withdrawal', {
                     method: 'POST',
                     body: formData
                 });
@@ -814,7 +814,7 @@ document.getElementById('transfer-form').addEventListener('submit', async functi
         // Logout (o'zgarmadi)
         document.getElementById('logout-btn').addEventListener('click', async function() {
             try {
-                await fetch('/api/logout', { method: 'POST' });
+                await fetch('https://wallet-uz.onrender.com/api/logout', { method: 'POST' });
                 window.location.href = 'register-login.html';
             } catch (error) {
                 console.error('Logout failed:', error);
