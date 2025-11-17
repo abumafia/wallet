@@ -1,0 +1,196 @@
+<!-- New trade.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade H-Coin - Wallet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(-45deg, #1e3c72, #2a5298); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Navigation -->
+    <nav class="bg-white bg-opacity-10 py-4 px-6">
+        <div class="container mx-auto flex justify-between">
+            <a href="index.html" class="text-xl font-bold">H-Coin Wallet</a>
+            <a href="index.html" class="bg-blue-500 px-4 py-2 rounded">Dashboard</a>
+        </div>
+    </nav>
+   
+    <div class="container mx-auto py-8 px-4">
+        <h1 class="text-3xl font-bold mb-8 text-center">Trade H-Coin</h1>
+       
+        <!-- Current Price -->
+        <div class="bg-white bg-opacity-10 rounded-lg p-6 mb-6 text-center">
+            <h2 class="text-2xl mb-2">Current Price</h2>
+            <p class="text-4xl font-bold" id="current-price">1000 UZS</p>
+            <p class="text-sm opacity-75">Last updated: <span id="last-update"></span></p>
+        </div>
+       
+        <!-- Balances -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
+                <h3 class="text-lg font-bold">H-Coin Balance</h3>
+                <p class="text-2xl" id="trade-hcoin-balance">0 H-Coin</p>
+            </div>
+            <div class="bg-white bg-opacity-10 rounded-lg p-4 text-center">
+                <h3 class="text-lg font-bold">UZS Balance</h3>
+                <p class="text-2xl" id="trade-uzs-balance">0 UZS</p>
+            </div>
+        </div>
+       
+        <!-- Price Chart -->
+        <div class="bg-white bg-opacity-10 rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-bold mb-4">Price Chart (Last 50 Updates)</h3>
+            <canvas id="trade-chart" width="400" height="200"></canvas>
+        </div>
+       
+        <!-- Buy/Sell Forms -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Buy Form -->
+            <div class="bg-green-500 bg-opacity-20 rounded-lg p-6">
+                <h3 class="text-xl font-bold mb-4 text-green-100">Buy H-Coin</h3>
+                <form id="buy-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-bold mb-2">UZS Amount</label>
+                        <input type="number" id="buy-uzs" class="w-full p-2 rounded bg-white text-gray-800" min="1" required>
+                        <p class="text-sm mt-1">≈ <span id="buy-hcoin-eq">0</span> H-Coin (1% fee)</p>
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 py-2 rounded font-bold">Buy</button>
+                </form>
+            </div>
+           
+            <!-- Sell Form -->
+            <div class="bg-red-500 bg-opacity-20 rounded-lg p-6">
+                <h3 class="text-xl font-bold mb-4 text-red-100">Sell H-Coin</h3>
+                <form id="sell-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-bold mb-2">H-Coin Amount</label>
+                        <input type="number" id="sell-hcoin" class="w-full p-2 rounded bg-white text-gray-800" step="0.01" min="0.01" required>
+                        <p class="text-sm mt-1">≈ <span id="sell-uzs-eq">0</span> UZS (1% fee)</p>
+                    </div>
+                    <button type="submit" class="w-full bg-red-600 py-2 rounded font-bold">Sell</button>
+                </form>
+            </div>
+        </div>
+    </div>
+   
+    <script>
+        let currentUser = null;
+        let currentPrice = 1000;
+        let tradeChart = null;
+        // Auth check
+        async function checkAuth() {
+            const response = await fetch('/api/user');
+            if (response.ok) {
+                currentUser = await response.json();
+                displayBalances();
+                loadHcoinValue();
+                loadPriceHistory();
+            } else {
+                window.location.href = 'register-login.html';
+            }
+        }
+        // Display balances
+        function displayBalances() {
+            document.getElementById('trade-hcoin-balance').textContent = `${currentUser.hcoinBalance.toFixed(2)} H-Coin`;
+            document.getElementById('trade-uzs-balance').textContent = `${currentUser.uzsBalance.toFixed(0)} UZS`;
+        }
+        // Load H-coin value
+        async function loadHcoinValue() {
+            const response = await fetch('/api/hcoin-value');
+            if (response.ok) {
+                const data = await response.json();
+                currentPrice = data.value;
+                document.getElementById('current-price').textContent = `${data.value.toFixed(2)} UZS`;
+                document.getElementById('last-update').textContent = new Date(data.updatedAt).toLocaleString();
+                updateEqs();
+            }
+        }
+        // Load price history
+        async function loadPriceHistory() {
+            const response = await fetch('/api/price-history');
+            if (response.ok) {
+                const history = await response.json();
+                const ctx = document.getElementById('trade-chart').getContext('2d');
+                if (tradeChart) tradeChart.destroy();
+                tradeChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: history.map(h => new Date(h.timestamp).toLocaleTimeString()),
+                        datasets: [{
+                            label: 'Price (UZS)',
+                            data: history.map(h => h.price),
+                            borderColor: 'rgb(34 197 94)',
+                            backgroundColor: 'rgba(34 197 94, 0.1)'
+                        }]
+                    },
+                    options: { responsive: true, scales: { y: { beginAtZero: false } } }
+                });
+            }
+        }
+        // Update equivalents
+        function updateEqs() {
+            const buyUzs = parseFloat(document.getElementById('buy-uzs').value) || 0;
+            const netBuy = buyUzs * 0.99; // 1% fee
+            document.getElementById('buy-hcoin-eq').textContent = (netBuy / currentPrice).toFixed(4);
+           
+            const sellHcoin = parseFloat(document.getElementById('sell-hcoin').value) || 0;
+            const grossSell = sellHcoin * currentPrice;
+            const netSell = grossSell * 0.99;
+            document.getElementById('sell-uzs-eq').textContent = netSell.toFixed(0);
+        }
+        // Buy form
+        document.getElementById('buy-uzs').addEventListener('input', updateEqs);
+        document.getElementById('buy-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const uzsAmount = parseFloat(document.getElementById('buy-uzs').value);
+            try {
+                const response = await fetch('/api/trade/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uzsAmount })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(`Bought ${data.hcoinAmount.toFixed(4)} H-Coin!`);
+                    checkAuth();
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Error');
+            }
+        });
+        // Sell form
+        document.getElementById('sell-hcoin').addEventListener('input', updateEqs);
+        document.getElementById('sell-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const hcoinAmount = parseFloat(document.getElementById('sell-hcoin').value);
+            try {
+                const response = await fetch('/api/trade/sell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hcoinAmount })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(`Sold ${hcoinAmount.toFixed(4)} H-Coin for ${data.uzsAmount.toFixed(0)} UZS!`);
+                    checkAuth();
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Error');
+            }
+        });
+        // Init
+        checkAuth();
+        setInterval(loadHcoinValue, 15000); // Har 15 soniyada narxni yangilash (real vaqt rejimi)
+        setInterval(loadPriceHistory, 15000); // Har 15 soniyada diagrammni yangilash
+    </script>
+</body>
+</html>

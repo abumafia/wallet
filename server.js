@@ -1,3 +1,4 @@
+// Updated wallet server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -15,7 +16,7 @@ mongoose.connect('mongodb+srv://apl:apl00@gamepaymentbot.ffcsj5v.mongodb.net/haq
 }).catch(err => {
   console.error('MongoDB connection error:', err);
 });
-// User Schema
+// User Schema (uzsBalance qo'shildi)
 const userSchema = new mongoose.Schema({
   avatar: { type: String, default: '' },
   firstName: { type: String, required: true },
@@ -29,39 +30,48 @@ const userSchema = new mongoose.Schema({
   },
   password: { type: String, required: true },
   walletNumber: { type: String, unique: true },
-  balance: { type: Number, default: 0 },
+  hcoinBalance: { type: Number, default: 0 }, // H-coin balans
+  uzsBalance: { type: Number, default: 0 }, // UZS balans (trade uchun)
   isFrozen: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
-// Transaction Schema (kengaytirildi: paymentMethod va externalDetails qo'shildi)
+// Transaction Schema (type ga 'buy_hcoin', 'sell_hcoin' qo'shildi)
 const transactionSchema = new mongoose.Schema({
   fromUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   toUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   amount: { type: Number, required: true },
-  type: { type: String, enum: ['transfer', 'deposit', 'withdrawal'] },
+  type: { type: String, enum: ['transfer', 'deposit', 'withdrawal', 'buy_hcoin', 'sell_hcoin'] },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   screenshot: { type: String, default: '' },
   description: { type: String, default: '' },
-  paymentMethod: { type: String, enum: ['card', 'payeer', 'paypal', 'btc', 'eth', 'usdt', 'uzcard'], default: 'card' }, // To'lov usullari
-  externalDetails: { type: String, default: '' }, // Foydalanuvchi hisobi (email, wallet address)
+  paymentMethod: { type: String, enum: ['card', 'payeer', 'paypal', 'btc', 'eth', 'usdt', 'uzcard'], default: 'card' },
+  externalDetails: { type: String, default: '' },
+  priceAtTime: { type: Number, default: 0 }, // Trade vaqtida narx
+  fee: { type: Number, default: 0 }, // Komissiya
   createdAt: { type: Date, default: Date.now }
 });
-// HAQ Value Schema (o'zgarmadi)
-const haqValueSchema = new mongoose.Schema({
-  value: { type: Number, required: true },
+// H-coin Value Schema
+const hcoinValueSchema = new mongoose.Schema({
+  value: { type: Number, required: true }, // 1 H-coin = value UZS
   change: { type: Number, default: 0 },
   updatedAt: { type: Date, default: Date.now }
 });
-// Conversion Rates Schema (yangi: HAQ konvertatsiyasi)
+// Price History Schema (yangi: diagrammalar uchun)
+const priceHistorySchema = new mongoose.Schema({
+  price: { type: Number, required: true },
+  timestamp: { type: Date, default: Date.now }
+});
+// Conversion Rates Schema (H-coin uchun)
 const conversionRateSchema = new mongoose.Schema({
-  currency: { type: String, required: true, unique: true }, // 'UZS', 'USD', 'EUR' va h.k.
-  rate: { type: Number, required: true }, // 1 HAQ = rate (masalan, 1200 UZS)
+  currency: { type: String, required: true, unique: true },
+  rate: { type: Number, required: true },
   updatedAt: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
-const HaqValue = mongoose.model('HaqValue', haqValueSchema);
+const HcoinValue = mongoose.model('HcoinValue', hcoinValueSchema);
+const PriceHistory = mongoose.model('PriceHistory', priceHistorySchema);
 const ConversionRate = mongoose.model('ConversionRate', conversionRateSchema);
 // Middleware
 app.use(express.json());
@@ -85,10 +95,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 // Generate unique wallet number
 function generateWalletNumber() {
-  const prefix = 'HAQ';
+  const prefix = 'H';
   const numbers = '0123456789';
   let result = prefix;
-  for (let i = 0; i < 13; i++) {
+  for (let i = 0; i < 15; i++) {
     result += numbers.charAt(Math.floor(Math.random() * numbers.length));
   }
   return result;
@@ -111,8 +121,22 @@ const requireAdmin = async (req, res, next) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+// Dynamic H-coin price update (har 5 daqiqada)
+async function updateHcoinPrice() {
+  const minPrice = 30;
+  const maxPrice = 60;
+  const newPrice = Math.random() * (maxPrice - minPrice) + minPrice;
+  const latest = await HcoinValue.findOne().sort({ updatedAt: -1 });
+  const change = ((newPrice - latest.value) / latest.value) * 100;
+  const hcoinValue = new HcoinValue({ value: newPrice, change });
+  await hcoinValue.save();
+  const history = new PriceHistory({ price: newPrice });
+  await history.save();
+  console.log(`H-coin price updated to ${newPrice} UZS (change: ${change.toFixed(2)}%)`);
+}
+setInterval(updateHcoinPrice, 15000); // 15 soniya
 // Routes
-// Register (o'zgarmadi)
+// Register (hcoinBalance va uzsBalance qo'shildi)
 app.post('/api/register', async (req, res) => {
   try {
     const { firstName, lastName, username, password, bio, avatar } = req.body;
@@ -153,7 +177,8 @@ app.post('/api/register', async (req, res) => {
       bio: bio ? bio.trim() : '',
       avatar: avatar ? avatar.trim() : '',
       walletNumber,
-      balance: 0,
+      hcoinBalance: 0,
+      uzsBalance: 0,
       isAdmin: isFirstUser
     });
    
@@ -190,7 +215,7 @@ app.post('/api/register', async (req, res) => {
     res.status(500).json({ error: 'Registration failed: ' + error.message });
   }
 });
-// Login (o'zgarmadi)
+// Login (hcoinBalance ko'rsatish)
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -220,7 +245,8 @@ app.post('/api/login', async (req, res) => {
         lastName: user.lastName,
         username: user.username,
         walletNumber: user.walletNumber,
-        balance: user.balance,
+        hcoinBalance: user.hcoinBalance,
+        uzsBalance: user.uzsBalance,
         isAdmin: user.isAdmin
       }
     });
@@ -229,12 +255,12 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Login failed' });
   }
 });
-// Logout (o'zgarmadi)
+// Logout
 app.post('/api/logout', (req, res) => {
   req.session.destroy();
   res.json({ success: true, message: 'Logout successful' });
 });
-// Get current user (o'zgarmadi)
+// Get current user (hcoinBalance va uzsBalance)
 app.get('/api/user', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId).select('-password');
@@ -246,7 +272,7 @@ app.get('/api/user', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to get user data' });
   }
 });
-// Update user profile (o'zgarmadi)
+// Update user profile
 app.put('/api/user', requireAuth, async (req, res) => {
   try {
     const { firstName, lastName, bio, avatar, socialLinks } = req.body;
@@ -273,11 +299,11 @@ app.put('/api/user', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });
-// Get user by wallet number (o'zgarmadi)
+// Get user by wallet number
 app.get('/api/user/wallet/:walletNumber', requireAuth, async (req, res) => {
   try {
     const user = await User.findOne({ walletNumber: req.params.walletNumber })
-      .select('firstName lastName avatar walletNumber');
+      .select('firstName lastName avatar walletNumber hcoinBalance');
    
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -288,316 +314,10 @@ app.get('/api/user/wallet/:walletNumber', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to get user' });
   }
 });
-// Create transaction (transfer) (o'zgarmadi)
+// Create transaction (transfer, NewEra bilan)
 app.post('/api/transaction', requireAuth, async (req, res) => {
   try {
-    const { toWallet, amount, description } = req.body;
-   
-    if (!toWallet || !amount || amount <= 0) {
-      return res.status(400).json({ error: 'Invalid transaction details' });
-    }
-   
-    const fromUser = await User.findById(req.session.userId);
-    if (fromUser.isFrozen) {
-      return res.status(400).json({ error: 'Your account is frozen' });
-    }
-   
-    if (fromUser.balance < amount) {
-      return res.status(400).json({ error: 'Insufficient balance' });
-    }
-   
-    const toUser = await User.findOne({ walletNumber: toWallet });
-    if (!toUser) {
-      return res.status(404).json({ error: 'Recipient not found' });
-    }
-   
-    if (toUser._id.toString() === fromUser._id.toString()) {
-      return res.status(400).json({ error: 'Cannot transfer to yourself' });
-    }
-   
-    const transaction = new Transaction({
-      fromUser: fromUser._id,
-      toUser: toUser._id,
-      amount,
-      type: 'transfer',
-      description: description ? description.trim() : '',
-      status: 'pending'
-    });
-   
-    await transaction.save();
-   
-    res.json({ success: true, message: 'Transaction created successfully', transaction });
-  } catch (error) {
-    console.error('Transaction error:', error);
-    res.status(500).json({ error: 'Transaction failed' });
-  }
-});
-// Create deposit request (kengaytirildi: paymentMethod va externalDetails qo'shildi)
-app.post('/api/deposit', requireAuth, upload.single('screenshot'), async (req, res) => {
-  try {
-    const { amount, paymentMethod, externalDetails } = req.body;
-   
-    if (!amount || amount <= 0 || !paymentMethod || !externalDetails) {
-      return res.status(400).json({ error: 'Amount, payment method, and account details are required' });
-    }
-   
-    const screenshot = req.file ? `/uploads/${req.file.filename}` : '';
-   
-    const transaction = new Transaction({
-      fromUser: null,
-      toUser: req.session.userId,
-      amount: parseFloat(amount),
-      type: 'deposit',
-      paymentMethod,
-      externalDetails: externalDetails.trim(),
-      screenshot,
-      status: 'pending'
-    });
-   
-    await transaction.save();
-   
-    res.json({ success: true, message: 'Deposit request submitted', transaction });
-  } catch (error) {
-    console.error('Deposit error:', error);
-    res.status(500).json({ error: 'Deposit request failed' });
-  }
-});
-// Create withdrawal request (yangi: withdrawal uchun)
-app.post('/api/withdrawal', requireAuth, upload.single('screenshot'), async (req, res) => {
-  try {
-    const { amount, paymentMethod, externalDetails } = req.body;
-   
-    if (!amount || amount <= 0 || !paymentMethod || !externalDetails) {
-      return res.status(400).json({ error: 'Amount, payment method, and account details are required' });
-    }
-   
-    const user = await User.findById(req.session.userId);
-    if (user.isFrozen) {
-      return res.status(400).json({ error: 'Your account is frozen' });
-    }
-   
-    if (user.balance < amount) {
-      return res.status(400).json({ error: 'Insufficient balance' });
-    }
-   
-    const screenshot = req.file ? `/uploads/${req.file.filename}` : '';
-   
-    const transaction = new Transaction({
-      fromUser: req.session.userId,
-      toUser: null,
-      amount: parseFloat(amount),
-      type: 'withdrawal',
-      paymentMethod,
-      externalDetails: externalDetails.trim(),
-      screenshot,
-      status: 'pending'
-    });
-   
-    await transaction.save();
-   
-    res.json({ success: true, message: 'Withdrawal request submitted', transaction });
-  } catch (error) {
-    console.error('Withdrawal error:', error);
-    res.status(500).json({ error: 'Withdrawal request failed' });
-  }
-});
-// Get user transactions (o'zgarmadi, populate ga paymentMethod qo'shish mumkin, lekin hozircha o'zgarmadi)
-app.get('/api/transactions', requireAuth, async (req, res) => {
-  try {
-    const transactions = await Transaction.find({
-      $or: [
-        { fromUser: req.session.userId },
-        { toUser: req.session.userId }
-      ]
-    })
-    .populate('fromUser', 'firstName lastName walletNumber')
-    .populate('toUser', 'firstName lastName walletNumber')
-    .sort({ createdAt: -1 });
-   
-    res.json(transactions);
-  } catch (error) {
-    console.error('Transactions error:', error);
-    res.status(500).json({ error: 'Failed to get transactions' });
-  }
-});
-// Get HAQ value (o'zgarmadi)
-app.get('/api/haq-value', async (req, res) => {
-  try {
-    const haqValue = await HaqValue.findOne().sort({ updatedAt: -1 });
-    res.json(haqValue || { value: 1, change: 0 });
-  } catch (error) {
-    console.error('HAQ value error:', error);
-    res.status(500).json({ error: 'Failed to get HAQ value' });
-  }
-});
-// Get conversion rates (yangi)
-app.get('/api/conversions', async (req, res) => {
-  try {
-    const rates = await ConversionRate.find().sort({ currency: 1 });
-    res.json(rates);
-  } catch (error) {
-    console.error('Conversion rates error:', error);
-    res.status(500).json({ error: 'Failed to get conversion rates' });
-  }
-});
-// Update HAQ value (admin only) (o'zgarmadi)
-app.put('/api/haq-value', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { value, change } = req.body;
-   
-    if (!value || value < 0) {
-      return res.status(400).json({ error: 'Invalid HAQ value' });
-    }
-   
-    const haqValue = new HaqValue({
-      value,
-      change: change || 0
-    });
-   
-    await haqValue.save();
-   
-    res.json({ success: true, haqValue });
-  } catch (error) {
-    console.error('HAQ update error:', error);
-    res.status(500).json({ error: 'Failed to update HAQ value' });
-  }
-});
-// Update or add conversion rate (admin only, yangi)
-app.post('/api/admin/conversions', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { currency, rate } = req.body;
-   
-    if (!currency || rate === undefined || rate < 0) {
-      return res.status(400).json({ error: 'Currency and valid rate are required' });
-    }
-   
-    let conversion = await ConversionRate.findOne({ currency: currency.toUpperCase() });
-    if (conversion) {
-      conversion.rate = rate;
-      conversion.updatedAt = new Date();
-      await conversion.save();
-    } else {
-      conversion = new ConversionRate({
-        currency: currency.toUpperCase(),
-        rate
-      });
-      await conversion.save();
-    }
-   
-    res.json({ success: true, conversion });
-  } catch (error) {
-    console.error('Conversion update error:', error);
-    res.status(500).json({ error: 'Failed to update conversion rate' });
-  }
-});
-// Admin routes (o'zgarmadi, lekin transaction populate ga paymentMethod qo'shish mumkin)
-app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (error) {
-    console.error('Admin users error:', error);
-    res.status(500).json({ error: 'Failed to get users' });
-  }
-});
-app.get('/api/admin/transactions', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const transactions = await Transaction.find()
-      .populate('fromUser', 'firstName lastName username walletNumber')
-      .populate('toUser', 'firstName lastName username walletNumber')
-      .sort({ createdAt: -1 });
-   
-    res.json(transactions);
-  } catch (error) {
-    console.error('Admin transactions error:', error);
-    res.status(500).json({ error: 'Failed to get transactions' });
-  }
-});
-// Mavjud `/api/admin/transaction/:id` ni yangilang (faqat if qo'shing)
-app.put('/api/admin/transaction/:id', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.body;
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-   
-    const transaction = await Transaction.findById(req.params.id)
-      .populate('fromUser', 'firstName lastName username walletNumber')
-      .populate('toUser', 'firstName lastName username walletNumber');
-   
-    if (!transaction) {
-      return res.status(404).json({ error: 'Transaction not found' });
-    }
-   
-    const wasPending = transaction.status === 'pending';
-    transaction.status = status;
-    await transaction.save();
-   
-    if (status === 'approved' && wasPending) {
-      if (transaction.type === 'deposit') {
-        await User.findByIdAndUpdate(transaction.toUser, {
-          $inc: { balance: transaction.amount }
-        });
-      } else if (transaction.type === 'withdrawal') {
-        await User.findByIdAndUpdate(transaction.fromUser, {
-          $inc: { balance: -transaction.amount }
-        });
-      } else if (transaction.type === 'transfer') {
-        // Yangi: Agar NewEra transfer bo'lsa
-        if (transaction.description && transaction.description.includes('newera')) {
-          const neweraUsername = transaction.description.split('newera:')[1]?.trim(); // Description da saqlangan username
-          if (neweraUsername) {
-            try {
-              // NewEra ga API call
-              const response = await fetch(`http://localhost:5000/api/user/${neweraUsername}/add-balance`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer wallet-api-key' // Token
-                },
-                body: JSON.stringify({
-                  amount: transaction.amount,
-                  fromWalletUser: {
-                    username: transaction.fromUser.username,
-                    walletNumber: transaction.fromUser.walletNumber
-                  }
-                })
-              });
-              if (!response.ok) {
-                throw new Error('NewEra API error');
-              }
-              const neweraData = await response.json();
-              console.log('NewEra transfer successful:', neweraData);
-            } catch (apiError) {
-              console.error('NewEra integration error:', apiError);
-              // Rollback: Balansni qaytarish
-              await User.findByIdAndUpdate(transaction.fromUser, { $inc: { balance: transaction.amount } });
-              return res.status(500).json({ error: 'Transfer to NewEra failed, rolled back' });
-            }
-          }
-        } else {
-          // Oddiy transfer
-          await User.findByIdAndUpdate(transaction.fromUser, {
-            $inc: { balance: -transaction.amount }
-          });
-          await User.findByIdAndUpdate(transaction.toUser, {
-            $inc: { balance: transaction.amount }
-          });
-        }
-      }
-    }
-   
-    res.json({ success: true, transaction });
-  } catch (error) {
-    console.error('Transaction update error:', error);
-    res.status(500).json({ error: 'Failed to update transaction' });
-  }
-});
-
-// Yangi: Transfer endpointida NewEra ni qo'llab-quvvatlash (mavjud /api/transaction ni yangilang)
-app.post('/api/transaction', requireAuth, async (req, res) => {
-  try {
-    let { toWallet, amount, description, neweraUsername } = req.body; // Yangi: neweraUsername qo'shildi
+    let { toWallet, amount, description, neweraUsername } = req.body;
    
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Invalid amount' });
@@ -608,23 +328,20 @@ app.post('/api/transaction', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Your account is frozen' });
     }
    
-    if (fromUser.balance < amount) {
-      return res.status(400).json({ error: 'Insufficient balance' });
+    if (fromUser.hcoinBalance < amount) {
+      return res.status(400).json({ error: 'Insufficient H-coin balance' });
     }
    
     let type = 'transfer';
     let toUser = null;
    
     if (neweraUsername) {
-      // NewEra transfer
       if (!neweraUsername) {
         return res.status(400).json({ error: 'NewEra username required' });
       }
-      // Profilni tekshirish (optional, frontend da qilingan)
-      type = 'transfer'; // Pending qoladi
-      description = `newera:${neweraUsername} ${description || ''}`; // Username ni description da saqlash
+      type = 'transfer';
+      description = `newera:${neweraUsername} ${description || ''}`;
     } else {
-      // Oddiy transfer
       if (!toWallet) {
         return res.status(400).json({ error: 'Recipient wallet required' });
       }
@@ -654,15 +371,364 @@ app.post('/api/transaction', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Transaction failed' });
   }
 });
+// Deposit (UZS deposit, H-coin ga konvertatsiya)
+app.post('/api/deposit', requireAuth, upload.single('screenshot'), async (req, res) => {
+  try {
+    const { amount, paymentMethod, externalDetails } = req.body; // amount UZS
+   
+    if (!amount || amount <= 50000 || !paymentMethod || !externalDetails) {
+      return res.status(400).json({ error: 'Amount, payment method, and account details are required, minimal deposit is 50.000uzs' });
+    }
+   
+    const currentPrice = await HcoinValue.findOne().sort({ updatedAt: -1 });
+    const hcoinAmount = parseFloat(amount) / currentPrice.value;
+   
+    const screenshot = req.file ? `/uploads/${req.file.filename}` : '';
+   
+    const transaction = new Transaction({
+      fromUser: null,
+      toUser: req.session.userId,
+      amount: hcoinAmount,
+      type: 'deposit',
+      paymentMethod,
+      externalDetails: externalDetails.trim(),
+      screenshot,
+      priceAtTime: currentPrice.value,
+      status: 'pending',
+      description: `UZS ${amount} deposited, converted to ${hcoinAmount.toFixed(2)} H-coin at ${currentPrice.value} UZS/H-coin`
+    });
+   
+    await transaction.save();
+   
+    res.json({ success: true, message: 'Deposit request submitted', transaction });
+  } catch (error) {
+    console.error('Deposit error:', error);
+    res.status(500).json({ error: 'Deposit request failed' });
+  }
+});
+// Withdrawal (H-coin ni UZS ga konvertatsiya)
+app.post('/api/withdrawal', requireAuth, upload.single('screenshot'), async (req, res) => {
+  try {
+    const { amount, paymentMethod, externalDetails } = req.body; // amount H-coin
+   
+    if (!amount || amount <= 100000 || !paymentMethod || !externalDetails) {
+      return res.status(400).json({ error: 'Amount, payment method, and account details are required, minimal withdraw is 100.000uzs' });
+    }
+   
+    const user = await User.findById(req.session.userId);
+    if (user.isFrozen) {
+      return res.status(400).json({ error: 'Your account is frozen' });
+    }
+   
+    if (user.hcoinBalance < amount) {
+      return res.status(400).json({ error: 'Insufficient H-coin balance' });
+    }
+   
+    const currentPrice = await HcoinValue.findOne().sort({ updatedAt: -1 });
+    const uzsAmount = amount * currentPrice.value;
+   
+    const screenshot = req.file ? `/uploads/${req.file.filename}` : '';
+   
+    const transaction = new Transaction({
+      fromUser: req.session.userId,
+      toUser: null,
+      amount,
+      type: 'withdrawal',
+      paymentMethod,
+      externalDetails: externalDetails.trim(),
+      screenshot,
+      priceAtTime: currentPrice.value,
+      status: 'pending',
+      description: `${amount} H-coin withdrawn, converted to ${uzsAmount.toFixed(0)} UZS at ${currentPrice.value} UZS/H-coin`
+    });
+   
+    await transaction.save();
+   
+    res.json({ success: true, message: 'Withdrawal request submitted', transaction });
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    res.status(500).json({ error: 'Withdrawal request failed' });
+  }
+});
+// Buy H-coin (UZS bilan sotib olish, 1% fee)
+app.post('/api/trade/buy', requireAuth, async (req, res) => {
+  try {
+    const { uzsAmount } = req.body;
+    if (!uzsAmount || uzsAmount <= 0) {
+      return res.status(400).json({ error: 'Invalid UZS amount' });
+    }
+    const user = await User.findById(req.session.userId);
+    if (user.uzsBalance < uzsAmount) {
+      return res.status(400).json({ error: 'Insufficient UZS balance' });
+    }
+    const currentPrice = await HcoinValue.findOne().sort({ updatedAt: -1 });
+    const fee = uzsAmount * 0.01; // 1% fee admin uchun
+    const netUzs = uzsAmount - fee;
+    const hcoinAmount = netUzs / currentPrice.value;
+    user.uzsBalance -= uzsAmount;
+    user.hcoinBalance += hcoinAmount;
+    await user.save();
+    const transaction = new Transaction({
+      fromUser: req.session.userId,
+      toUser: null,
+      amount: hcoinAmount,
+      type: 'buy_hcoin',
+      status: 'approved',
+      priceAtTime: currentPrice.value,
+      fee,
+      description: `Bought ${hcoinAmount.toFixed(4)} H-coin for ${uzsAmount} UZS (fee: ${fee.toFixed(2)})`
+    });
+    await transaction.save();
+    res.json({ success: true, hcoinAmount, remainingUzs: user.uzsBalance });
+  } catch (error) {
+    res.status(500).json({ error: 'Buy failed' });
+  }
+});
+// Sell H-coin (H-coin ni UZS ga sotish, 1% fee)
+app.post('/api/trade/sell', requireAuth, async (req, res) => {
+  try {
+    const { hcoinAmount } = req.body;
+    if (!hcoinAmount || hcoinAmount <= 0) {
+      return res.status(400).json({ error: 'Invalid H-coin amount' });
+    }
+    const user = await User.findById(req.session.userId);
+    if (user.hcoinBalance < hcoinAmount) {
+      return res.status(400).json({ error: 'Insufficient H-coin balance' });
+    }
+    const currentPrice = await HcoinValue.findOne().sort({ updatedAt: -1 });
+    const uzsAmount = hcoinAmount * currentPrice.value;
+    const fee = uzsAmount * 0.01; // 1% fee
+    const netUzs = uzsAmount - fee;
+    user.hcoinBalance -= hcoinAmount;
+    user.uzsBalance += netUzs;
+    await user.save();
+    const transaction = new Transaction({
+      fromUser: req.session.userId,
+      toUser: null,
+      amount: hcoinAmount,
+      type: 'sell_hcoin',
+      status: 'approved',
+      priceAtTime: currentPrice.value,
+      fee,
+      description: `Sold ${hcoinAmount.toFixed(4)} H-coin for ${uzsAmount} UZS (fee: ${fee.toFixed(2)}, net: ${netUzs.toFixed(2)})`
+    });
+    await transaction.save();
+    res.json({ success: true, uzsAmount: netUzs, remainingHcoin: user.hcoinBalance });
+  } catch (error) {
+    res.status(500).json({ error: 'Sell failed' });
+  }
+});
+// Get user transactions
+app.get('/api/transactions', requireAuth, async (req, res) => {
+  try {
+    const transactions = await Transaction.find({
+      $or: [
+        { fromUser: req.session.userId },
+        { toUser: req.session.userId }
+      ]
+    })
+    .populate('fromUser', 'firstName lastName walletNumber')
+    .populate('toUser', 'firstName lastName walletNumber')
+    .sort({ createdAt: -1 });
+   
+    res.json(transactions);
+  } catch (error) {
+    console.error('Transactions error:', error);
+    res.status(500).json({ error: 'Failed to get transactions' });
+  }
+});
+// Get H-coin value
+app.get('/api/hcoin-value', async (req, res) => {
+  try {
+    const hcoinValue = await HcoinValue.findOne().sort({ updatedAt: -1 });
+    res.json(hcoinValue || { value: 1000, change: 0 }); // Default 1000 UZS
+  } catch (error) {
+    console.error('H-coin value error:', error);
+    res.status(500).json({ error: 'Failed to get H-coin value' });
+  }
+});
+// Get price history (oxirgi 50 ta)
+app.get('/api/price-history', async (req, res) => {
+  try {
+    const history = await PriceHistory.find().sort({ timestamp: -1 }).limit(50);
+    res.json(history.reverse()); // Eski dan yangi gacha
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get price history' });
+  }
+});
+// Get conversion rates
+app.get('/api/conversions', async (req, res) => {
+  try {
+    const rates = await ConversionRate.find().sort({ currency: 1 });
+    res.json(rates);
+  } catch (error) {
+    console.error('Conversion rates error:', error);
+    res.status(500).json({ error: 'Failed to get conversion rates' });
+  }
+});
+// Update H-coin value (admin only)
+app.put('/api/hcoin-value', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { value, change } = req.body;
+   
+    if (!value || value < 0) {
+      return res.status(400).json({ error: 'Invalid H-coin value' });
+    }
+   
+    const hcoinValue = new HcoinValue({
+      value,
+      change: change || 0
+    });
+   
+    await hcoinValue.save();
+    const history = new PriceHistory({ price: value });
+    await history.save();
+   
+    res.json({ success: true, hcoinValue });
+  } catch (error) {
+    console.error('H-coin update error:', error);
+    res.status(500).json({ error: 'Failed to update H-coin value' });
+  }
+});
+// Update or add conversion rate (admin only)
+app.post('/api/admin/conversions', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { currency, rate } = req.body;
+   
+    if (!currency || rate === undefined || rate < 0) {
+      return res.status(400).json({ error: 'Currency and valid rate are required' });
+    }
+   
+    let conversion = await ConversionRate.findOne({ currency: currency.toUpperCase() });
+    if (conversion) {
+      conversion.rate = rate;
+      conversion.updatedAt = new Date();
+      await conversion.save();
+    } else {
+      conversion = new ConversionRate({
+        currency: currency.toUpperCase(),
+        rate
+      });
+      await conversion.save();
+    }
+   
+    res.json({ success: true, conversion });
+  } catch (error) {
+    console.error('Conversion update error:', error);
+    res.status(500).json({ error: 'Failed to update conversion rate' });
+  }
+});
+// Admin routes
+app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (error) {
+    console.error('Admin users error:', error);
+    res.status(500).json({ error: 'Failed to get users' });
+  }
+});
+app.get('/api/admin/transactions', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const transactions = await Transaction.find()
+      .populate('fromUser', 'firstName lastName username walletNumber')
+      .populate('toUser', 'firstName lastName username walletNumber')
+      .sort({ createdAt: -1 });
+   
+    res.json(transactions);
+  } catch (error) {
+    console.error('Admin transactions error:', error);
+    res.status(500).json({ error: 'Failed to get transactions' });
+  }
+});
+// Admin transaction update (NewEra integration va H-coin handling)
+app.put('/api/admin/transaction/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+   
+    const transaction = await Transaction.findById(req.params.id)
+      .populate('fromUser', 'firstName lastName username walletNumber')
+      .populate('toUser', 'firstName lastName username walletNumber');
+   
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+   
+    const wasPending = transaction.status === 'pending';
+    transaction.status = status;
+    await transaction.save();
+   
+    if (status === 'approved' && wasPending) {
+      if (transaction.type === 'deposit') {
+        await User.findByIdAndUpdate(transaction.toUser, {
+          $inc: { hcoinBalance: transaction.amount }
+        });
+      } else if (transaction.type === 'withdrawal') {
+        await User.findByIdAndUpdate(transaction.fromUser, {
+          $inc: { hcoinBalance: -transaction.amount }
+        });
+      } else if (transaction.type === 'transfer') {
+        if (transaction.description && transaction.description.includes('newera')) {
+          const neweraUsername = transaction.description.split('newera:')[1]?.trim();
+          if (neweraUsername) {
+            try {
+              const response = await fetch(`http://localhost:5000/api/user/${neweraUsername}/add-balance`, { // NewEra port
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer wallet-api-key'
+                },
+                body: JSON.stringify({
+                  amount: transaction.amount,
+                  fromWalletUser: {
+                    username: transaction.fromUser.username,
+                    walletNumber: transaction.fromUser.walletNumber
+                  }
+                })
+              });
+              if (!response.ok) {
+                throw new Error('NewEra API error');
+              }
+              const neweraData = await response.json();
+              console.log('NewEra transfer successful:', neweraData);
+            } catch (apiError) {
+              console.error('NewEra integration error:', apiError);
+              await User.findByIdAndUpdate(transaction.fromUser, { $inc: { hcoinBalance: transaction.amount } });
+              return res.status(500).json({ error: 'Transfer to NewEra failed, rolled back' });
+            }
+          }
+        } else {
+          await User.findByIdAndUpdate(transaction.fromUser, {
+            $inc: { hcoinBalance: -transaction.amount }
+          });
+          await User.findByIdAndUpdate(transaction.toUser, {
+            $inc: { hcoinBalance: transaction.amount }
+          });
+        }
+      }
+    }
+   
+    res.json({ success: true, transaction });
+  } catch (error) {
+    console.error('Transaction update error:', error);
+    res.status(500).json({ error: 'Failed to update transaction' });
+  }
+});
 app.put('/api/admin/user/:id/balance', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { balance } = req.body;
-    if (balance === undefined || balance < 0) {
+    const { hcoinBalance, uzsBalance } = req.body;
+    if (hcoinBalance === undefined && uzsBalance === undefined) {
       return res.status(400).json({ error: 'Invalid balance' });
     }
+    const updateData = {};
+    if (hcoinBalance !== undefined) updateData.hcoinBalance = hcoinBalance;
+    if (uzsBalance !== undefined) updateData.uzsBalance = uzsBalance;
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { balance },
+      updateData,
       { new: true }
     ).select('-password');
    
@@ -692,6 +758,7 @@ app.put('/api/admin/user/:id/freeze', requireAuth, requireAdmin, async (req, res
     res.status(500).json({ error: 'Failed to update user status' });
   }
 });
+// Admin statistics (H-coin bilan)
 app.get('/api/admin/statistics', requireAuth, requireAdmin, async (req, res) => {
   try {
     const period = req.query.period || 'weekly';
@@ -717,8 +784,7 @@ app.get('/api/admin/statistics', requireAuth, requireAdmin, async (req, res) => 
         startDate.setDate(startDate.getDate() - 7);
     }
    
-    // Kengaytirilgan statistika: har xil turlarni ajratish
-    const [deposits, withdrawals, transfers] = await Promise.all([
+    const [deposits, withdrawals, transfers, buys, sells] = await Promise.all([
       Transaction.aggregate([
         { $match: { type: 'deposit', status: 'approved', createdAt: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } }
@@ -730,6 +796,14 @@ app.get('/api/admin/statistics', requireAuth, requireAdmin, async (req, res) => 
       Transaction.aggregate([
         { $match: { type: 'transfer', status: 'approved', createdAt: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } }
+      ]),
+      Transaction.aggregate([
+        { $match: { type: 'buy_hcoin', status: 'approved', createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } }
+      ]),
+      Transaction.aggregate([
+        { $match: { type: 'sell_hcoin', status: 'approved', createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } }
       ])
     ]);
 
@@ -739,19 +813,23 @@ app.get('/api/admin/statistics', requireAuth, requireAdmin, async (req, res) => 
     const withdrawalAmount = withdrawals[0] ? withdrawals[0].amount : 0;
     const transferCount = transfers[0] ? transfers[0].count : 0;
     const transferAmount = transfers[0] ? transfers[0].amount : 0;
+    const buyCount = buys[0] ? buys[0].count : 0;
+    const buyAmount = buys[0] ? buys[0].amount : 0;
+    const sellCount = sells[0] ? sells[0].count : 0;
+    const sellAmount = sells[0] ? sells[0].amount : 0;
    
-    const totalAmount = depositAmount + transferAmount - withdrawalAmount; // Net amount
-    const transactionCount = depositCount + withdrawalCount + transferCount;
+    const totalAmount = depositAmount + transferAmount + buyAmount - withdrawalAmount - sellAmount;
+    const transactionCount = depositCount + withdrawalCount + transferCount + buyCount + sellCount;
    
     const topUsers = await User.find()
-      .sort({ balance: -1 })
+      .sort({ hcoinBalance: -1 })
       .limit(3)
-      .select('firstName lastName walletNumber balance');
+      .select('firstName lastName walletNumber hcoinBalance');
    
-    const totalBalanceResult = await User.aggregate([
-      { $group: { _id: null, total: { $sum: '$balance' } } }
+    const totalHcoinResult = await User.aggregate([
+      { $group: { _id: null, total: { $sum: '$hcoinBalance' } } }
     ]);
-    const totalBalance = totalBalanceResult.length > 0 ? totalBalanceResult[0].total : 0;
+    const totalHcoin = totalHcoinResult.length > 0 ? totalHcoinResult[0].total : 0;
    
     const totalUsers = await User.countDocuments();
    
@@ -765,8 +843,12 @@ app.get('/api/admin/statistics', requireAuth, requireAdmin, async (req, res) => 
       withdrawalAmount,
       transferCount,
       transferAmount,
+      buyCount,
+      buyAmount,
+      sellCount,
+      sellAmount,
       topUsers,
-      totalBalance,
+      totalHcoin,
       totalUsers
     });
   } catch (error) {
@@ -774,7 +856,7 @@ app.get('/api/admin/statistics', requireAuth, requireAdmin, async (req, res) => 
     res.status(500).json({ error: 'Failed to get statistics' });
   }
 });
-// Create admin user (o'zgarmadi)
+// Create admin user
 async function createAdminUser() {
   try {
     const adminExists = await User.findOne({ isAdmin: true });
@@ -801,7 +883,8 @@ async function createAdminUser() {
         username: 'admin',
         password: hashedPassword,
         walletNumber,
-        balance: 0,
+        hcoinBalance: 0,
+        uzsBalance: 0,
         isAdmin: true
       });
      
@@ -812,28 +895,30 @@ async function createAdminUser() {
     console.error('Error creating admin user:', error);
   }
 }
-// Initialize HAQ value va default conversion rates (yangi: default rates qo'shildi)
-async function initializeHaqValue() {
+// Initialize H-coin value va history (default 1000 UZS)
+async function initializeHcoinValue() {
   try {
-    const haqValueExists = await HaqValue.findOne();
-    if (!haqValueExists) {
-      const haqValue = new HaqValue({
-        value: 1,
+    const hcoinValueExists = await HcoinValue.findOne();
+    if (!hcoinValueExists) {
+      const hcoinValue = new HcoinValue({
+        value: 1000,
         change: 0
       });
      
-      await haqValue.save();
-      console.log('Initial HAQ value set to 1');
+      await hcoinValue.save();
+      const history = new PriceHistory({ price: 1000 });
+      await history.save();
+      console.log('Initial H-coin value set to 1000 UZS');
     }
   } catch (error) {
-    console.error('Error initializing HAQ value:', error);
+    console.error('Error initializing H-coin value:', error);
   }
  
-  // Default conversion rates (agar yo'q bo'lsa)
+  // Default conversion rates
   const defaultRates = [
-    { currency: 'UZS', rate: 1200 },
-    { currency: 'USD', rate: 0.1 },
-    { currency: 'EUR', rate: 0.09 }
+    { currency: 'UZS', rate: 1 },
+    { currency: 'USD', rate: 0.00006 }, // Taxminiy
+    { currency: 'EUR', rate: 0.000055 }
   ];
  
   for (const rate of defaultRates) {
@@ -841,7 +926,7 @@ async function initializeHaqValue() {
     if (!existing) {
       const conversion = new ConversionRate(rate);
       await conversion.save();
-      console.log(`Default conversion rate set: 1 HAQ = ${rate.rate} ${rate.currency}`);
+      console.log(`Default conversion rate set: 1 H-coin = ${rate.rate.toFixed(4)} ${rate.currency}`);
     }
   }
 }
@@ -849,5 +934,6 @@ async function initializeHaqValue() {
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   await createAdminUser();
-  await initializeHaqValue();
+  await initializeHcoinValue();
+  updateHcoinPrice(); // Dastlabki update
 });
