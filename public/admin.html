@@ -74,7 +74,7 @@
             <p class="text-blue-200">Manage users, transactions, H-Coin trades, NewEra transfers, and system settings</p>
         </div>
        
-        <!-- Statistics Cards (H-coin va trade qo'shildi) -->
+        <!-- Statistics Cards (H-coin va trade qo'shildi, UZS stats qo'shildi) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
                 <div class="flex items-center justify-between">
@@ -122,7 +122,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-500 text-sm">H-Coin Value</p>
-                        <p id="hcoin-value" class="text-2xl font-bold text-gray-800 mt-1">1000 UZS</p>
+                        <p id="hcoin-value" class="text-2xl font-bold text-gray-800 mt-1">50 UZS</p> <!-- O'ZGARTIRILDI: 1000 dan 50 ga -->
                     </div>
                     <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +150,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Left Column - Users and Transactions -->
             <div class="lg:col-span-2 space-y-8">
-                <!-- Pending Transactions (buy/sell qo'shildi) -->
+                <!-- Pending Transactions (buy/sell/deposit/withdrawal UZS handling) -->
                 <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-bold text-gray-800">Pending Transactions</h2>
@@ -223,7 +223,7 @@
                                 New H-Coin Value (UZS)
                             </label>
                             <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                   id="hcoin-value-input" type="number" step="0.01" min="0.01" value="1000" required>
+                                   id="hcoin-value-input" type="number" step="0.01" min="0.01" value="50" required> <!-- O'ZGARTIRILDI: value 1000 dan 50 ga -->
                         </div>
                        
                         <div>
@@ -285,7 +285,7 @@
                     </form>
                 </div>
                
-                <!-- Statistics (kengaytirildi: buys/sells) -->
+                <!-- Statistics (kengaytirildi: buys/sells/deposit/withdrawal UZS) -->
                 <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Statistics</h2>
                    
@@ -305,17 +305,17 @@
                         </div>
                        
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Total Amount:</span>
+                            <span class="text-gray-600">Total Amount (H-Coin):</span>
                             <span id="stats-amount" class="font-semibold">0 H-Coin</span>
                         </div>
 
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Deposits:</span>
-                            <span id="stats-deposits" class="font-semibold">0 (0 H-Coin)</span>
+                            <span class="text-gray-600">Deposits (UZS):</span>
+                            <span id="stats-deposits" class="font-semibold">0 (0 UZS)</span> <!-- O'ZGARTIRILDI: H-Coin dan UZS ga -->
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Withdrawals:</span>
-                            <span id="stats-withdrawals" class="font-semibold">0 (0 H-Coin)</span>
+                            <span class="text-gray-600">Withdrawals (UZS):</span>
+                            <span id="stats-withdrawals" class="font-semibold">0 (0 UZS)</span> <!-- O'ZGARTIRILDI: H-Coin dan UZS ga -->
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Transfers:</span>
@@ -635,7 +635,7 @@
                 showNotification('Failed to load transactions', 'error');
             }
         }
-        // Display pending transactions (buy/sell handling)
+        // Display pending transactions (buy/sell/deposit/withdrawal UZS handling)
         function displayPendingTransactions() {
             const container = document.getElementById('pending-transactions-list');
            
@@ -657,6 +657,9 @@
                 let methodText = transaction.paymentMethod ? `(${transaction.paymentMethod.toUpperCase()})` : '';
                 const fromUser = transaction.fromUser ? `${transaction.fromUser.firstName} ${transaction.fromUser.lastName}` : 'Admin';
                 const toUser = transaction.toUser ? `${transaction.toUser.firstName} ${transaction.toUser.lastName}` : 'Admin';
+                let amountText = transaction.type === 'deposit' || transaction.type === 'withdrawal' ? 
+                                 `${transaction.amount.toFixed(0)} UZS` : 
+                                 `${transaction.amount.toFixed(2)} H-Coin`; // O'ZGARTIRILDI: deposit/withdrawal uchun UZS ko'rsatish
                
                 if (transaction.type === 'transfer') {
                     title = 'Transfer';
@@ -685,10 +688,10 @@
                                 <p class="text-sm text-gray-500 mt-1">${new Date(transaction.createdAt).toLocaleString()}</p>
                                 ${transaction.description ? `<p class="text-sm text-gray-600 mt-1">${transaction.description}</p>` : ''}
                                 ${transaction.priceAtTime ? `<p class="text-sm text-purple-600 mt-1">Price: ${transaction.priceAtTime} UZS</p>` : ''}
-                                ${transaction.fee ? `<p class="text-sm text-red-600 mt-1">Fee: ${transaction.fee.toFixed(2)} UZS</p>` : ''}
+                                ${transaction.fee ? `<p class="text-sm text-red-600 mt-1">Fee: ${transaction.fee.toFixed(2)}</p>` : ''}
                             </div>
                             <div class="text-right">
-                                <p class="font-bold text-lg text-gray-800">${transaction.amount.toFixed(2)} H-Coin</p>
+                                <p class="font-bold text-lg text-gray-800">${amountText}</p>
                                 <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full mt-1 inline-block">Pending</span>
                             </div>
                         </div>
@@ -805,7 +808,7 @@
                 showNotification('Network error. Please try again.', 'error');
             }
         }
-        // Load statistics (kengaytirildi)
+        // Load statistics (kengaytirildi, UZS uchun)
         async function loadStatistics() {
             try {
                 const period = document.getElementById('stats-period').value;
@@ -814,8 +817,8 @@
                     const stats = await response.json();
                     document.getElementById('stats-count').textContent = stats.transactionCount;
                     document.getElementById('stats-amount').textContent = `${stats.totalAmount.toFixed(2)} H-Coin`;
-                    document.getElementById('stats-deposits').textContent = `${stats.depositCount} (${stats.depositAmount.toFixed(2)} H-Coin)`;
-                    document.getElementById('stats-withdrawals').textContent = `${stats.withdrawalCount} (${stats.withdrawalAmount.toFixed(2)} H-Coin)`;
+                    document.getElementById('stats-deposits').textContent = `${stats.depositCount} (${stats.depositAmount.toFixed(0)} UZS)`; // O'ZGARTIRILDI: toFixed(2) dan (0) ga, H-Coin dan UZS ga
+                    document.getElementById('stats-withdrawals').textContent = `${stats.withdrawalCount} (${stats.withdrawalAmount.toFixed(0)} UZS)`; // O'ZGARTIRILDI: toFixed(2) dan (0) ga, H-Coin dan UZS ga
                     document.getElementById('stats-transfers').textContent = `${stats.transferCount} (${stats.transferAmount.toFixed(2)} H-Coin)`;
                     document.getElementById('stats-buys').textContent = `${stats.buyCount} (${stats.buyAmount.toFixed(2)} H-Coin)`;
                     document.getElementById('stats-sells').textContent = `${stats.sellCount} (${stats.sellAmount.toFixed(2)} H-Coin)`;
@@ -825,7 +828,7 @@
                 console.error('Failed to load statistics:', error);
             }
         }
-        // Update stats chart (buys/sells qo'shildi)
+        // Update stats chart (buys/sells qo'shildi, deposit/withdrawal UZS e'tiborsiz)
         function updateStatsChart(stats) {
             const ctx = document.getElementById('stats-chart').getContext('2d');
             if (statsChart) {
@@ -834,10 +837,10 @@
             statsChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Deposits', 'Withdrawals', 'Transfers', 'Buys', 'Sells'],
+                    labels: ['Transfers', 'Buys', 'Sells'], // O'ZGARTIRILDI: Deposits/Withdrawals olib tashlandi, chunki UZS
                     datasets: [{
-                        data: [stats.depositAmount, stats.withdrawalAmount, stats.transferAmount, stats.buyAmount, stats.sellAmount],
-                        backgroundColor: ['#10B981', '#EF4444', '#3B82F6', '#8B5CF6', '#F59E0B']
+                        data: [stats.transferAmount, stats.buyAmount, stats.sellAmount],
+                        backgroundColor: ['#3B82F6', '#8B5CF6', '#F59E0B']
                     }]
                 },
                 options: {
@@ -905,7 +908,7 @@
         function updateTransactionStats() {
             document.getElementById('pending-transactions').textContent = pendingTransactions.length;
         }
-        // Show transaction details (buy/sell qo'shildi)
+        // Show transaction details (buy/sell/deposit/withdrawal UZS qo'shildi)
         function showTransactionDetails(transactionId) {
             const transaction = allTransactions.find(t => t._id === transactionId);
             if (!transaction) return;
@@ -915,6 +918,9 @@
             let toSection = '';
             let methodSection = transaction.paymentMethod ? `<div class="flex justify-between items-center"><span class="text-gray-600">Payment Method:</span><span class="capitalize">${transaction.paymentMethod}</span></div>` : '';
             let externalSection = transaction.externalDetails ? `<div class="flex justify-between items-start"><span class="text-gray-600">External Details:</span><span class="text-right">${transaction.externalDetails}</span></div>` : '';
+            let amountText = transaction.type === 'deposit' || transaction.type === 'withdrawal' ? 
+                             `${transaction.amount.toFixed(0)} UZS` : 
+                             `${transaction.amount.toFixed(2)} H-Coin`; // O'ZGARTIRILDI: deposit/withdrawal uchun UZS ko'rsatish
            
             const fromUser = transaction.fromUser ? `${transaction.fromUser.firstName} ${transaction.fromUser.lastName}` : 'Admin';
             const toUser = transaction.toUser ? `${transaction.toUser.firstName} ${transaction.toUser.lastName}` : 'External';
@@ -992,7 +998,7 @@
                    
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Amount:</span>
-                        <span class="font-bold text-lg text-purple-600">${transaction.amount.toFixed(2)} H-Coin</span>
+                        <span class="font-bold text-lg text-purple-600">${amountText}</span>
                     </div>
                    
                     ${fromSection}
@@ -1270,7 +1276,7 @@
         // Initialize page
         checkAuth();
        
-        setInterval(loadData, 30000);
+        setInterval(loadData, 15000); // O'ZGARTIRILDI: 30000 dan 15000 ga (trade.html ga mos)
     </script>
 </body>
 </html>

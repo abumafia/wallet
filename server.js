@@ -376,8 +376,8 @@ app.post('/api/deposit', requireAuth, upload.single('screenshot'), async (req, r
   try {
     const { amount, paymentMethod, externalDetails } = req.body; // amount UZS
    
-    if (!amount || amount <= 50000 || !paymentMethod || !externalDetails) {
-      return res.status(400).json({ error: 'Amount, payment method, and account details are required, minimal deposit is 50.000uzs' });
+    if (!amount || amount <= 5000 || !paymentMethod || !externalDetails) {
+      return res.status(400).json({ error: 'Amount, payment method, and account details are required, minimal deposit is 5.000uzs' });
     }
    
     const currentPrice = await HcoinValue.findOne().sort({ updatedAt: -1 });
@@ -411,8 +411,8 @@ app.post('/api/withdrawal', requireAuth, upload.single('screenshot'), async (req
   try {
     const { amount, paymentMethod, externalDetails } = req.body; // amount H-coin
    
-    if (!amount || amount <= 100000 || !paymentMethod || !externalDetails) {
-      return res.status(400).json({ error: 'Amount, payment method, and account details are required, minimal withdraw is 100.000uzs' });
+    if (!amount || amount <= 30000 || !paymentMethod || !externalDetails) {
+      return res.status(400).json({ error: 'Amount, payment method, and account details are required, minimal withdraw is 30.000uzs' });
     }
    
     const user = await User.findById(req.session.userId);
