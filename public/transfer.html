@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transfer - H-Coin Wallet</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Skeleton CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.24/skeleton.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0c1445 0%, #1a237e 50%, #0f172a 100%);
+            min-height: 100vh;
+        }
+        
+        .transfer-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+            z-index: -1;
+            animation: subtleFloat 20s ease-in-out infinite;
+        }
+        
+        @keyframes subtleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .navbar {
+            background: rgba(12, 20, 69, 0.9) !important;
+            backdrop-filter: blur(20px);
+        }
+        
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            padding: 0.875rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        
+        .form-control:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+            background: white;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.875rem;
+            font-weight: 500;
+            width: 100%;
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
+            color: white;
+        }
+        
+        .recipient-info {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .recipient-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .fee-info {
+            background: #fef3c7;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                margin: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="transfer-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark fixed-top px-3">
+        <div class="container-fluid">
+            <a href="index.html" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </nav>
+    
+    <div class="container py-4 mt-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <h2 class="text-success mb-2">
+                                <i class="fas fa-paper-plane me-2"></i>Transfer H-Coin
+                            </h2>
+                            <p class="text-muted">Send H-Coin to another wallet (1% fee applies).</p>
+                        </div>
+                        
+                        <form id="transfer-form">
+                            <div class="mb-3">
+                                <label for="to-wallet" class="form-label fw-medium">
+                                    <i class="fas fa-wallet me-2 text-info"></i>Recipient Wallet Number
+                                </label>
+                                <input type="text" class="form-control" id="to-wallet" placeholder="H012345678901234" required>
+                                <div id="recipient-info" class="recipient-info hidden">
+                                    <div class="d-flex align-items-center">
+                                        <img id="recipient-avatar" src="" alt="Avatar" class="recipient-avatar me-3">
+                                        <div>
+                                            <h6 id="recipient-name" class="mb-1"></h6>
+                                            <p class="mb-1" id="recipient-username">@username</p>
+                                            <small id="recipient-bio" class="text-muted"></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="amount" class="form-label fw-medium">
+                                    <i class="fas fa-coins me-2 text-success"></i>Amount (H-Coin)
+                                </label>
+                                <input type="number" class="form-control" id="amount" step="0.01" min="0.01" required>
+                                <div id="fee-info" class="fee-info hidden">
+                                    <strong>Fee (1%):</strong> <span id="fee-amount">0.00</span> H-Coin | Net: <span id="net-amount">0.00</span> H-Coin
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label fw-medium">
+                                    <i class="fas fa-comment me-2 text-muted"></i>Description (Optional)
+                                </label>
+                                <textarea class="form-control" id="description" rows="2" placeholder="Add a note"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-submit">
+                                <i class="fas fa-paper-plane me-2"></i>Send Transfer
+                            </button>
+                        </form>
+                        
+                        <div class="text-center mt-3">
+                            <a href="index.html" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Fetch recipient info on wallet input
+        document.getElementById('to-wallet').addEventListener('input', async (e) => {
+            const wallet = e.target.value.trim();
+            const infoDiv = document.getElementById('recipient-info');
+            if (wallet.length >= 16 && wallet.startsWith('H')) {
+                try {
+                    const response = await fetch(`/api/user/wallet/${wallet}`);
+                    if (response.ok) {
+                        const user = await response.json();
+                        document.getElementById('recipient-avatar').src = user.avatar || 'https://via.placeholder.com/50';
+                        document.getElementById('recipient-name').textContent = `${user.firstName} ${user.lastName}`;
+                        document.getElementById('recipient-username').textContent = `@${user.username}`;
+                        document.getElementById('recipient-bio').textContent = user.bio || 'No bio';
+                        infoDiv.classList.remove('hidden');
+                    } else {
+                        infoDiv.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch user:', error);
+                    infoDiv.classList.add('hidden');
+                }
+            } else {
+                infoDiv.classList.add('hidden');
+            }
+        });
+        
+        // Calculate fee on amount input
+        document.getElementById('amount').addEventListener('input', (e) => {
+            const amount = parseFloat(e.target.value) || 0;
+            const fee = amount * 0.01;
+            const net = amount - fee;
+            const feeDiv = document.getElementById('fee-info');
+            if (amount > 0) {
+                document.getElementById('fee-amount').textContent = fee.toFixed(2);
+                document.getElementById('net-amount').textContent = net.toFixed(2);
+                feeDiv.classList.remove('hidden');
+            } else {
+                feeDiv.classList.add('hidden');
+            }
+        });
+        
+        // Form submission
+        document.getElementById('transfer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                toWallet: document.getElementById('to-wallet').value,
+                amount: document.getElementById('amount').value,
+                description: document.getElementById('description').value
+            };
+            
+            try {
+                const response = await fetch('/api/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('Transfer completed successfully!');
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                } else {
+                    showNotification(data.error || 'Transfer failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error', 'error');
+            }
+        });
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 5000);
+        }
+    </script>
+</body>
+</html>

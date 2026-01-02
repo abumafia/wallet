@@ -1,491 +1,431 @@
-<!-- Updated wallet index.html (H-coin ga o'zgartirildi, diagrammalar qo'shildi) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - H-Coin Wallet</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Skeleton CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.24/skeleton.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        .gradient-bg {
-            background: linear-gradient(-45deg, #1e3c72, #2a5298, #1e3c72, #2a5298);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0c1445 0%, #1a237e 50%, #0f172a 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #333;
         }
-       
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        
+        .wallet-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+            z-index: -1;
+            animation: subtleFloat 20s ease-in-out infinite;
         }
-       
-        .card-hover {
+        
+        @keyframes subtleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .navbar {
+            background: rgba(12, 20, 69, 0.9) !important;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .nav-link {
+            color: #e2e8f0 !important;
+            font-weight: 500;
             transition: all 0.3s ease;
+            position: relative;
         }
-       
-        .card-hover:hover {
+        
+        .nav-link:hover {
+            color: #a0aec0 !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-link.active {
+            color: #60a5fa !important;
+            border-bottom: 2px solid #60a5fa;
+        }
+        
+        .navbar-brand {
+            color: #f1f5f9 !important;
+            font-weight: 600;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.98);
+        }
+        
+        .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
         }
-       
-        .pulse-animation {
-            animation: pulse 2s infinite;
+        
+        .balance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f5f9;
         }
-       
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        
+        .balance-item:last-child {
+            border-bottom: none;
         }
-
-        /* Mobile menu overlay styles */
-        #mobile-menu-overlay {
-            transition: opacity 0.3s ease-in-out;
+        
+        .balance-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: white;
         }
-
-        #mobile-menu-panel {
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
+        
+        .hcoin-icon { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .uzs-icon { background: linear-gradient(135deg, #10b981, #059669); }
+        .nft-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        
+        .btn-action {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            color: #f1f5f9;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
         }
-
-        #mobile-menu-overlay.active #mobile-menu-panel {
+        
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px rgba(71, 85, 105, 0.3);
+            color: #f1f5f9;
+            text-decoration: none;
+        }
+        
+        .btn-deposit { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .btn-withdraw { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .btn-trade { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        .btn-nft { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
+        .btn-transfer { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+        
+        .chart-container {
+            height: 200px;
+            margin-top: 1rem;
+        }
+        
+        .transaction-item {
+            padding: 0.875rem;
+            border-radius: 10px;
+            background: #f8fafc;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .transaction-item:hover {
+            background: #f1f5f9;
+            transform: translateX(3px);
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+        
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .shape:nth-child(1) { width: 60px; height: 60px; top: 20%; left: 10%; animation-delay: 0s; }
+        .shape:nth-child(2) { width: 40px; height: 40px; top: 60%; right: 20%; animation-delay: 3s; }
+        .shape:nth-child(3) { width: 80px; height: 80px; bottom: 20%; left: 20%; animation-delay: 5s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(90deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
             transform: translateX(0);
         }
-
-        .hamburger-line {
-            transition: all 0.3s ease;
+        
+        .notification.success { background: #10b981; }
+        .notification.error { background: #ef4444; }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .navbar-nav {
+                background: rgba(12, 20, 69, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 8px;
+                margin-top: 0.5rem;
+            }
+            
+            .card {
+                margin-bottom: 0.75rem;
+            }
+            
+            body {
+                padding-top: 1.5rem;
+            }
+            
+            .chart-container {
+                height: 150px;
+            }
         }
-
-        .hamburger.active .hamburger-line:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
+        
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
         }
-
-        .hamburger.active .hamburger-line:nth-child(2) {
-            opacity: 0;
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
-
-        .hamburger.active .hamburger-line:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -6px);
+        
+        .text-white-soft {
+            color: #f1f5f9;
+        }
+        
+        .header-text {
+            color: #e2e8f0;
         }
     </style>
 </head>
-<body class="gradient-bg min-h-screen">
-    <div id="threejs-bg" class="fixed inset-0 z-0"></div>
-   
-    <!-- Navigation (trade.html qo'shildi, mobile menu qo'shildi) -->
-    <nav class="relative z-10 bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg py-4 px-4 sm:px-6 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-blue-500 rounded-full"></div>
-                <span class="text-white text-xl font-bold">H-Coin Wallet</span>
-            </div>
-           
-            <!-- Mobile hamburger menu -->
-            <button id="mobile-menu-btn" class="md:hidden p-2 focus:outline-none">
-                <div class="hamburger w-6 h-6 flex flex-col justify-center items-center space-y-1">
-                    <span class="hamburger-line block w-6 h-0.5 bg-white"></span>
-                    <span class="hamburger-line block w-6 h-0.5 bg-white"></span>
-                    <span class="hamburger-line block w-6 h-0.5 bg-white"></span>
-                </div>
+<body>
+    <div class="wallet-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold fs-4" href="index.html">
+                <i class="fas fa-coins me-2"></i>H-Coin Wallet
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
             </button>
-           
-            <!-- Desktop menu -->
-            <div class="hidden md:flex space-x-6">
-                <a href="index.html" class="text-white font-semibold border-b-2 border-blue-400">Dashboard</a>
-                <a href="trade.html" class="text-white font-semibold hover:text-blue-200 transition">Trade H-Coin</a>
-                <a href="history.html" class="text-white font-semibold hover:text-blue-200 transition">History</a>
-                <a href="profile.html" class="text-white font-semibold hover:text-blue-200 transition">Profile</a>
-            </div>
-           
-            <!-- User info and logout -->
-            <div class="flex items-center space-x-4">
-                <div id="user-info" class="text-white hidden">
-                    <span id="user-name" class="font-semibold"></span>
-                    <span id="user-balance" class="ml-2 bg-blue-500 px-2 py-1 rounded-full text-xs"></span>
-                </div>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300 hidden sm:block">
-                    Logout
-                </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="index.html"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="trade.html"><i class="fas fa-exchange-alt me-1"></i>Trade</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nft.html"><i class="fas fa-gem me-1"></i>NFT</a></li>
+                    <li class="nav-item"><a class="nav-link" href="history.html"><i class="fas fa-history me-1"></i>History</a></li>
+                    <li class="nav-item"><a class="nav-link" href="profile.html"><i class="fas fa-user me-1"></i>Profile</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger" href="register-login.html" id="logout-btn"><i class="fas fa-sign-out-alt me-1"></i> Logout</a></li>
+                </ul>
             </div>
         </div>
     </nav>
-
-    <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden">
-        <div id="mobile-menu-panel" class="fixed right-0 top-0 h-full w-64 bg-white bg-opacity-95 backdrop-blur-lg shadow-xl p-6 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold text-gray-800">Menu</h3>
-                <button id="close-mobile-menu" class="p-1 text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <ul class="space-y-4">
-                <li><a href="index.html" class="block text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition">Dashboard</a></li>
-                <li><a href="trade.html" class="block text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition">Trade H-Coin</a></li>
-                <li><a href="history.html" class="block text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition">History</a></li>
-                <li><a href="profile.html" class="block text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition">Profile</a></li>
-                <li><a id="mobile-logout" class="block text-red-600 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition">Logout</a></li>
-            </ul>
-        </div>
+    
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
     </div>
-   
-    <div class="relative z-10 container mx-auto py-4 sm:py-8 px-4">
-        <!-- H-Coin Value Display (diagrammalar qo'shildi, responsive qilindi) -->
-        <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center card-hover">
-            <h2 class="text-xl sm:text-2xl font-bold mb-2">H-Coin Value</h2>
-            <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-                <span id="hcoin-value" class="text-3xl sm:text-4xl font-bold">1000.00</span>
-                <span id="hcoin-change" class="text-base sm:text-lg px-3 py-1 rounded-full">0.00%</span>
-            </div>
-            <p class="mt-2 text-blue-200 mb-4 text-sm sm:text-base">1 H-Coin = <span id="uzs-price"></span> UZS (Updates every 15 second)</p>
-            <!-- Price Chart (responsive) -->
-            <div class="mt-4">
-                <canvas id="price-chart" class="w-full h-48 sm:h-64"></canvas>
-            </div>
+    
+    <div class="container py-4 mt-5">
+        <!-- Header -->
+        <div class="text-center mb-4 animate__animated animate__fadeInDown">
+            <h1 class="display-5 fw-bold header-text mb-3">
+                <i class="fas fa-chart-line me-2"></i>Welcome to Your Dashboard
+            </h1>
+            <p class="lead text-white-soft">Manage your H-Coin balances, trade securely, and explore digital assets.</p>
         </div>
-       
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-            <!-- Left Column - Balance and Quick Actions -->
-            <div class="lg:col-span-1 space-y-6 sm:space-y-8">
-                <!-- Balance Card (H-coin va UZS) -->
-                <div class="bg-white rounded-2xl shadow-xl p-4 sm:p-6 card-hover">
-                    <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Your Balances</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xl sm:text-2xl font-bold text-gray-900" id="hcoin-balance">0 H-Coin</p>
-                            <p class="text-xs sm:text-sm text-gray-500">≈ <span id="hcoin-uzs-eq">0</span> UZS</p>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xl sm:text-2xl font-bold text-gray-900" id="uzs-balance">0 UZS</p>
-                            <p class="text-xs sm:text-sm text-gray-500">Cash</p>
-                        </div>
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                            </svg>
-                        </div>
+        
+        <!-- H-Coin Value Card -->
+        <div class="card mb-4 animate__animated animate__fadeInUp">
+            <div class="card-body p-4">
+                <h5 class="card-title text-center mb-3 text-muted"><i class="fas fa-coins me-2"></i>Current H-Coin Value</h5>
+                <div class="row text-center mb-3">
+                    <div class="col-md-6">
+                        <h3 id="hcoin-value" class="fw-bold text-primary mb-1">1,000.00 UZS</h3>
+                        <span id="hcoin-change" class="badge bg-success-subtle text-success fs-6">+0.00%</span>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-muted small">Live updates every 15 seconds</p>
                     </div>
                 </div>
-               
-                <!-- Quick Actions (trade tugmasi qo'shildi, responsive) -->
-                <div class="bg-white rounded-2xl shadow-xl p-4 sm:p-6 card-hover">
-                    <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Quick Actions</h3>
-                    <div class="space-y-3 sm:space-y-4">
-                        <a href="trade.html" class="block w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2 text-sm">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                            <span>Trade H-Coin</span>
-                        </a>
-                        <button id="transfer-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2 text-sm">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                            </svg>
-                            <span>Transfer H-Coin</span>
-                        </button>
-                       
-                        <button id="deposit-btn" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2 text-sm">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            <span>Deposit UZS</span>
-                        </button>
-                       
-                        <button id="withdrawal-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg transition duration-300 flex items-center justify-center space-x-2 text-sm">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            <span>Withdraw H-Coin</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-           
-            <!-- Right Column - Recent Transactions -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl shadow-xl p-4 sm:p-6 card-hover">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                        <h3 class="text-lg sm:text-xl font-bold text-gray-800">Recent Transactions</h3>
-                        <a href="history.html" class="text-blue-500 hover:text-blue-700 font-medium mt-2 sm:mt-0">View All</a>
-                    </div>
-                   
-                    <div id="transactions-list" class="space-y-4">
-                        <div class="text-center py-8 text-gray-500">
-                            <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                            </svg>
-                            <p class="mt-2">No transactions yet</p>
-                        </div>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="price-chart"></canvas>
                 </div>
             </div>
         </div>
-    </div>
-   
-    <!-- Modals (transfer, deposit, withdrawal - H-coin ga o'zgartirildi, NewEra saqlangan, responsive qilindi) -->
-    <!-- Transfer Modal -->
-    <div id="transfer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden px-4">
-        <div class="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md mx-4">
-            <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Transfer H-Coin</h3>
-           
-            <form id="transfer-form">
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="transfer-type">
-                        Transfer Type
-                    </label>
-                    <select id="transfer-type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-                        <option value="internal">Internal (Wallet Number)</option>
-                        <option value="newera">NewEra User (Username)</option>
-                    </select>
-                </div>
-               
-                <div id="internal-group" class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="to-wallet">
-                        Recipient Wallet Number
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="to-wallet" type="text" placeholder="H012345678901234" required>
-                    <div id="recipient-info" class="mt-2 hidden">
-                        <div class="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
-                            <img id="recipient-avatar" src="" alt="" class="w-10 h-10 rounded-full">
-                            <div>
-                                <p id="recipient-name" class="font-semibold text-gray-800"></p>
-                                <p id="recipient-wallet" class="text-sm text-gray-600"></p>
+        
+        <div class="row g-3">
+            <!-- Balances Card -->
+            <div class="col-lg-4">
+                <div class="card animate__animated animate__fadeInLeft">
+                    <div class="card-body p-4">
+                        <h5 class="card-title text-muted mb-3"><i class="fas fa-wallet me-2"></i>Your Balances</h5>
+                        <div class="balance-item">
+                            <div class="d-flex align-items-center">
+                                <div class="balance-icon hcoin-icon me-3">
+                                    <i class="fab fa-bitcoin"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-semibold text-dark" id="hcoin-balance">0.00 H-Coin</h6>
+                                    <small class="text-muted">≈ <span id="hcoin-uzs-eq">0</span> UZS</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="balance-item">
+                            <div class="d-flex align-items-center">
+                                <div class="balance-icon uzs-icon me-3">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-semibold text-dark" id="uzs-balance">0 UZS</h6>
+                                    <small class="text-muted">Fiat Balance</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="balance-item">
+                            <div class="d-flex align-items-center">
+                                <div class="balance-icon nft-icon me-3">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-semibold text-dark" id="nft-count">0 NFTs</h6>
+                                    <small class="text-muted">Digital Collection</small>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-               
-                <div id="newera-group" class="mb-4 hidden">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="newera-username">
-                        NewEra Username
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="newera-username" type="text" placeholder="Enter NewEra username" required>
-                    <div id="newera-profile" class="mt-2 hidden bg-blue-50 p-3 rounded-lg">
-                        <!-- NewEra profile info -->
+            </div>
+            
+            <!-- Quick Actions Card -->
+            <div class="col-lg-4">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body p-4">
+                        <h5 class="card-title text-muted mb-3"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                        <a href="nft.html" class="btn-action btn-nft">
+                            <i class="fas fa-gem"></i> NFT Marketplace
+                        </a>
+                        <a href="trade.html" class="btn-action btn-trade">
+                            <i class="fas fa-exchange-alt"></i> Trade H-Coin
+                        </a>
+                        <a href="transfer.html" class="btn-action btn-transfer">
+                            <i class="fas fa-paper-plane"></i> Transfer
+                        </a>
+                        <a href="deposit.html" class="btn-action btn-deposit">
+                            <i class="fas fa-plus-circle"></i> Deposit UZS
+                        </a>
+                        <a href="withdraw.html" class="btn-action btn-withdraw">
+                            <i class="fas fa-minus-circle"></i> Withdraw
+                        </a>
                     </div>
                 </div>
-               
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="amount">
-                        Amount (H-Coin)
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="amount" type="number" step="0.01" min="0.01" required>
+            </div>
+            
+            <!-- Recent Transactions -->
+            <div class="col-lg-4">
+                <div class="card animate__animated animate__fadeInRight">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0 text-muted"><i class="fas fa-history me-2"></i>Recent Activity</h5>
+                            <a href="history.html" class="text-primary small fw-medium">View All <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                        <div id="transactions-list">
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-clock fa-lg mb-2 opacity-50"></i>
+                                <p class="mb-0 small">No recent transactions</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-               
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
-                        Description (Optional)
-                    </label>
-                    <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                              id="description" rows="2" placeholder="Add a note"></textarea>
-                </div>
-               
-                <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancel-transfer" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
-                        Transfer
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
-   
-    <!-- Deposit Modal (UZS deposit) -->
-    <div id="deposit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden px-4">
-        <div class="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md mx-4">
-            <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Deposit UZS (Convert to H-Coin)</h3>
-           
-            <form id="deposit-form" enctype="multipart/form-data">
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="deposit-amount">
-                        Amount (UZS)
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="deposit-amount" type="number" step="1" min="1" required>
-                    <p class="text-xs text-gray-500 mt-1">≈ <span id="deposit-hcoin-eq">0</span> H-Coin (at current price)</p>
-                </div>
-               
-                <!-- Payment method va boshqalar saqlangan -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="payment-method">
-                        Payment Method
-                    </label>
-                    <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="payment-method" required>
-                        <option value="">Select Method</option>
-                        <option value="payeer">Payeer</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="btc">Bitcoin (BTC)</option>
-                        <option value="eth">Ethereum (ETH)</option>
-                        <option value="usdt">USDT (TRC20)</option>
-                        <option value="uzcard">UzCard</option>
-                    </select>
-                </div>
-               
-                <div class="mb-4" id="external-details-group">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="external-details">
-                        Account Details
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="external-details" type="text" placeholder="Enter details" required>
-                </div>
-               
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="screenshot">
-                        Payment Screenshot
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="screenshot" type="file" accept="image/*" required>
-                </div>
-               
-                <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancel-deposit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300">
-                        Submit
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-   
-    <!-- Withdrawal Modal (H-coin withdrawal) -->
-    <div id="withdrawal-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden px-4">
-        <div class="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md mx-4">
-            <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Withdraw H-Coin (Convert to UZS)</h3>
-           
-            <form id="withdrawal-form" enctype="multipart/form-data">
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-amount">
-                        Amount (H-Coin)
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="withdrawal-amount" type="number" step="0.01" min="0.01" required>
-                    <p class="text-xs text-gray-500 mt-1">≈ <span id="withdrawal-uzs-eq">0</span> UZS (at current price)</p>
-                </div>
-               
-                <!-- Payment method va boshqalar saqlangan -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-method">
-                        Payment Method
-                    </label>
-                    <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="withdrawal-method" required>
-                        <option value="">Select Method</option>
-                        <option value="payeer">Payeer</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="btc">Bitcoin (BTC)</option>
-                        <option value="eth">Ethereum (ETH)</option>
-                        <option value="usdt">USDT (TRC20)</option>
-                        <option value="uzcard">UzCard</option>
-                    </select>
-                </div>
-               
-                <div class="mb-4" id="withdrawal-external-details-group">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-external-details">
-                        Account Details
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="withdrawal-external-details" type="text" placeholder="Enter details" required>
-                </div>
-               
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="withdrawal-screenshot">
-                        Proof (Optional)
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="withdrawal-screenshot" type="file" accept="image/*">
-                </div>
-               
-                <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancel-withdrawal" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300">
-                        Submit
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-   
+    
     <!-- Notification -->
-    <div id="notification" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg hidden z-50"></div>
+    <div id="notification" class="notification"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        // Mobile menu functionality
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
-        const closeMobileMenu = document.getElementById('close-mobile-menu');
-        const hamburger = document.querySelector('.hamburger');
-        const mobileLogout = document.getElementById('mobile-logout');
-
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenuOverlay.classList.remove('hidden');
-            setTimeout(() => mobileMenuOverlay.classList.add('active'), 10);
-            hamburger.classList.add('active');
-        });
-
-        closeMobileMenu.addEventListener('click', () => {
-            mobileMenuOverlay.classList.remove('active');
-            setTimeout(() => mobileMenuOverlay.classList.add('hidden'), 300);
-            hamburger.classList.remove('active');
-        });
-
-        mobileMenuOverlay.addEventListener('click', (e) => {
-            if (e.target === mobileMenuOverlay) {
-                mobileMenuOverlay.classList.remove('active');
-                setTimeout(() => mobileMenuOverlay.classList.add('hidden'), 300);
-                hamburger.classList.remove('active');
-            }
-        });
-
-        mobileLogout.addEventListener('click', () => {
-            document.getElementById('logout-btn').click();
-        });
-
-        // Three.js (saqlangan, responsive)
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('threejs-bg').appendChild(renderer.domElement);
-        const geometry = new THREE.TorusGeometry(2, 0.5, 16, 100);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x3b82f6,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
-        });
-        const torus = new THREE.Mesh(geometry, material);
-        scene.add(torus);
-        camera.position.z = 5;
-        function animate() {
-            requestAnimationFrame(animate);
-            torus.rotation.x += 0.01;
-            torus.rotation.y += 0.005;
-            renderer.render(scene, camera);
-        }
-        animate();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-        // Variables
+        // Global variables
         let currentUser = null;
         let currentPrice = 1000;
         let priceChart = null;
-        // Check auth
+        
+        // Check authentication
         async function checkAuth() {
             try {
                 const response = await fetch('/api/user');
@@ -495,23 +435,25 @@
                     loadTransactions();
                     loadHcoinValue();
                     loadPriceHistory();
+                    loadUserNFTs();
                 } else {
                     window.location.href = 'register-login.html';
                 }
             } catch (error) {
+                console.error('Auth check failed:', error);
                 window.location.href = 'register-login.html';
             }
         }
-        // Display user info (H-coin va UZS)
+        
+        // Display user information
         function displayUserInfo() {
-            document.getElementById('user-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
-            document.getElementById('user-balance').textContent = `${currentUser.hcoinBalance.toFixed(2)} H-Coin`;
             document.getElementById('hcoin-balance').textContent = `${currentUser.hcoinBalance.toFixed(2)} H-Coin`;
             document.getElementById('uzs-balance').textContent = `${currentUser.uzsBalance.toFixed(0)} UZS`;
+            document.getElementById('nft-count').textContent = `${currentUser.nftCount || 0} NFTs`;
             document.getElementById('hcoin-uzs-eq').textContent = (currentUser.hcoinBalance * currentPrice).toFixed(0);
-            document.getElementById('user-info').classList.remove('hidden');
         }
-        // Load H-coin value
+        
+        // Load H-Coin value
         async function loadHcoinValue() {
             try {
                 const response = await fetch('/api/hcoin-value');
@@ -519,29 +461,20 @@
                     const data = await response.json();
                     currentPrice = data.value;
                     document.getElementById('hcoin-value').textContent = `${data.value.toFixed(2)} UZS`;
-                    document.getElementById('uzs-price').textContent = data.value.toFixed(2);
-                   
+                    
                     const changeElement = document.getElementById('hcoin-change');
                     const changePercent = data.change.toFixed(2);
                     changeElement.textContent = `${changePercent > 0 ? '+' : ''}${changePercent}%`;
-                   
-                    if (data.change > 0) {
-                        changeElement.className = 'text-base sm:text-lg px-3 py-1 rounded-full bg-green-100 text-green-800';
-                    } else if (data.change < 0) {
-                        changeElement.className = 'text-base sm:text-lg px-3 py-1 rounded-full bg-red-100 text-red-800';
-                    } else {
-                        changeElement.className = 'text-base sm:text-lg px-3 py-1 rounded-full bg-gray-100 text-gray-800';
-                    }
-                    // Update equivalents
+                    changeElement.className = `badge ${data.change > 0 ? 'bg-success-subtle text-success' : data.change < 0 ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'} fs-6`;
+                    
                     document.getElementById('hcoin-uzs-eq').textContent = (currentUser.hcoinBalance * currentPrice).toFixed(0);
-                    document.getElementById('deposit-hcoin-eq').textContent = (parseFloat(document.getElementById('deposit-amount').value || 0) / currentPrice).toFixed(4);
-                    document.getElementById('withdrawal-uzs-eq').textContent = (parseFloat(document.getElementById('withdrawal-amount').value || 0) * currentPrice).toFixed(0);
                 }
             } catch (error) {
-                console.error('Failed to load H-coin value:', error);
+                console.error('Failed to load H-Coin value:', error);
             }
         }
-        // Load price history va chart
+        
+        // Load price history and chart
         async function loadPriceHistory() {
             try {
                 const response = await fetch('/api/price-history');
@@ -552,20 +485,29 @@
                     priceChart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: history.map(h => new Date(h.timestamp).toLocaleTimeString()),
+                            labels: history.map(h => new Date(h.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})),
                             datasets: [{
-                                label: 'H-Coin Price (UZS)',
+                                label: 'Price (UZS)',
                                 data: history.map(h => h.price),
-                                borderColor: 'rgb(59, 130, 246)',
+                                borderColor: '#3b82f6',
                                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                tension: 0.1
+                                tension: 0.4,
+                                fill: true
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            scales: { y: { beginAtZero: false } },
-                            plugins: { legend: { display: false } }
+                            scales: { 
+                                y: { 
+                                    beginAtZero: false,
+                                    grid: { color: '#e2e8f0' },
+                                    ticks: { color: '#64748b' }
+                                },
+                                x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } }
+                            },
+                            plugins: { legend: { display: false } },
+                            elements: { point: { radius: 0 } }
                         }
                     });
                 }
@@ -573,7 +515,22 @@
                 console.error('Failed to load price history:', error);
             }
         }
-        // Transactions (type ga buy/sell qo'shildi)
+        
+        // Load user NFTs
+        async function loadUserNFTs() {
+            try {
+                const response = await fetch('/api/nft/user/me');
+                if (response.ok) {
+                    const nfts = await response.json();
+                    currentUser.nftCount = nfts.length;
+                    displayUserInfo();
+                }
+            } catch (error) {
+                console.error('Failed to load NFTs:', error);
+            }
+        }
+        
+        // Load transactions
         async function loadTransactions() {
             try {
                 const response = await fetch('/api/transactions');
@@ -585,260 +542,57 @@
                 console.error('Failed to load transactions:', error);
             }
         }
+        
+        // Display transactions
         function displayTransactions(transactions) {
             const container = document.getElementById('transactions-list');
-           
             if (transactions.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                        </svg>
-                        <p class="mt-2">No transactions yet</p>
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-clock fa-lg mb-2 opacity-50"></i>
+                        <p class="mb-0 small">No recent transactions</p>
                     </div>
                 `;
                 return;
             }
-           
-            container.innerHTML = transactions.map(transaction => {
-                const isOutgoing = transaction.fromUser && transaction.fromUser._id === currentUser._id;
-                const otherUser = isOutgoing ? transaction.toUser : transaction.fromUser;
-                const amountClass = isOutgoing ? 'text-red-500' : 'text-green-500';
-                const amountPrefix = isOutgoing ? '-' : '+';
-                const typeText = transaction.type === 'buy_hcoin' ? 'Bought' : transaction.type === 'sell_hcoin' ? 'Sold' : isOutgoing ? 'To' : 'From';
-               
-                let statusBadge = '';
-                if (transaction.status === 'pending') {
-                    statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Pending</span>';
-                } else if (transaction.status === 'approved') {
-                    statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Completed</span>';
-                } else if (transaction.status === 'rejected') {
-                    statusBadge = '<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Rejected</span>';
-                }
-               
-                const methodText = transaction.paymentMethod ? `(${transaction.paymentMethod.toUpperCase()})` : '';
-                const priceText = transaction.priceAtTime ? ` @ ${transaction.priceAtTime} UZS` : '';
-                const feeText = transaction.fee ? ` (Fee: ${transaction.fee.toFixed(2)})` : '';
-               
+            
+            container.innerHTML = transactions.map(t => {
+                const isOutgoing = t.fromUser && t.fromUser._id === currentUser._id;
+                const amountClass = isOutgoing ? 'text-danger' : 'text-success';
+                const statusClass = t.status === 'pending' ? 'status-pending' : t.status === 'approved' ? 'status-approved' : 'status-rejected';
                 return `
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition duration-300">
-                        <div class="flex items-center space-x-4 w-full sm:w-auto mb-2 sm:mb-0">
-                            <div class="w-10 h-10 ${isOutgoing ? 'bg-red-100' : 'bg-green-100'} rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 ${isOutgoing ? 'text-red-500' : 'text-green-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${isOutgoing ? 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8' : 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'}"></path>
-                                </svg>
+                    <div class="transaction-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="${isOutgoing ? 'fas fa-arrow-up text-danger' : 'fas fa-arrow-down text-success'} fs-5"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0 fw-medium small">${t.type} ${t.amount.toFixed(2)} H-Coin</p>
+                                    <small class="text-muted">${new Date(t.createdAt).toLocaleDateString()}</small>
+                                </div>
                             </div>
-                            <div class="min-w-0 flex-1">
-                                <p class="font-semibold text-gray-800 text-sm truncate">${typeText} ${otherUser ? `${otherUser.firstName} ${otherUser.lastName}` : 'System'} ${methodText}${priceText}</p>
-                                <p class="text-xs text-gray-500">${new Date(transaction.createdAt).toLocaleDateString()}${feeText}</p>
+                            <div>
+                                <span class="badge ${statusClass}">${t.status}</span>
                             </div>
-                        </div>
-                        <div class="text-right flex flex-col items-end">
-                            <p class="font-bold ${amountClass} text-sm">${amountPrefix}${transaction.amount.toFixed(2)} H-Coin</p>
-                            <div class="mt-1">${statusBadge}</div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
+        
         // Notification
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
-            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
-            notification.classList.remove('hidden');
-           
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 5000);
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 4000);
         }
-        // Transfer events (NewEra fetch saqlangan)
-        document.getElementById('transfer-btn').addEventListener('click', () => {
-            document.getElementById('transfer-modal').classList.remove('hidden');
-        });
-        document.getElementById('cancel-transfer').addEventListener('click', () => {
-            document.getElementById('transfer-modal').classList.add('hidden');
-            document.getElementById('transfer-form').reset();
-            document.getElementById('recipient-info').classList.add('hidden');
-            document.getElementById('newera-profile').classList.add('hidden');
-        });
-        document.getElementById('transfer-type').addEventListener('change', function() {
-            const type = this.value;
-            document.getElementById('internal-group').classList.toggle('hidden', type !== 'internal');
-            document.getElementById('newera-group').classList.toggle('hidden', type !== 'newera');
-        });
-        document.getElementById('to-wallet').addEventListener('input', async function() {
-            const walletNumber = this.value.trim();
-            if (walletNumber.length === 16 && walletNumber.startsWith('H')) {
-                try {
-                    const response = await fetch(`/api/user/wallet/${walletNumber}`);
-                    if (response.ok) {
-                        const user = await response.json();
-                        document.getElementById('recipient-avatar').src = user.avatar || 'https://via.placeholder.com/40';
-                        document.getElementById('recipient-name').textContent = `${user.firstName} ${user.lastName}`;
-                        document.getElementById('recipient-wallet').textContent = user.walletNumber;
-                        document.getElementById('recipient-info').classList.remove('hidden');
-                    } else {
-                        document.getElementById('recipient-info').classList.add('hidden');
-                    }
-                } catch (error) {
-                    document.getElementById('recipient-info').classList.add('hidden');
-                }
-            } else {
-                document.getElementById('recipient-info').classList.add('hidden');
-            }
-        });
-        document.getElementById('newera-username').addEventListener('input', async function() {
-            const username = this.value.trim();
-            const profileDiv = document.getElementById('newera-profile');
-            if (username.length < 3) {
-                profileDiv.classList.add('hidden');
-                return;
-            }
-            try {
-                const response = await fetch(`https://newera-social.onrender.com/api/user/username/${username}`, {
-                    headers: { 'Authorization': 'Bearer wallet-api-key' }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        // Fill profile (saqlangan)
-                        profileDiv.classList.remove('hidden');
-                    } else {
-                        profileDiv.classList.add('hidden');
-                    }
-                } else {
-                    profileDiv.classList.add('hidden');
-                }
-            } catch (error) {
-                console.error('NewEra profile fetch error:', error);
-                profileDiv.classList.add('hidden');
-            }
-        });
-        document.getElementById('transfer-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-           
-            const type = document.getElementById('transfer-type').value;
-            const formData = {
-                amount: parseFloat(document.getElementById('amount').value),
-                description: document.getElementById('description').value
-            };
-           
-            if (type === 'internal') {
-                formData.toWallet = document.getElementById('to-wallet').value;
-            } else {
-                formData.neweraUsername = document.getElementById('newera-username').value;
-            }
-           
-            try {
-                const response = await fetch('/api/transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification('Transfer request submitted!');
-                    document.getElementById('transfer-modal').classList.add('hidden');
-                    document.getElementById('transfer-form').reset();
-                    document.getElementById('recipient-info').classList.add('hidden');
-                    document.getElementById('newera-profile').classList.add('hidden');
-                    checkAuth();
-                } else {
-                    showNotification(data.error || 'Transfer failed', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error.', 'error');
-            }
-        });
-        // Deposit events (UZS input da H-coin eq hisoblash)
-        document.getElementById('deposit-btn').addEventListener('click', () => {
-            document.getElementById('deposit-modal').classList.remove('hidden');
-        });
-        document.getElementById('cancel-deposit').addEventListener('click', () => {
-            document.getElementById('deposit-modal').classList.add('hidden');
-            document.getElementById('deposit-form').reset();
-        });
-        document.getElementById('deposit-amount').addEventListener('input', () => {
-            const uzs = parseFloat(document.getElementById('deposit-amount').value) || 0;
-            document.getElementById('deposit-hcoin-eq').textContent = (uzs / currentPrice).toFixed(4);
-        });
-        document.getElementById('deposit-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-           
-            const formData = new FormData();
-            formData.append('amount', document.getElementById('deposit-amount').value);
-            formData.append('paymentMethod', document.getElementById('payment-method').value);
-            formData.append('externalDetails', document.getElementById('external-details').value);
-            formData.append('screenshot', document.getElementById('screenshot').files[0]);
-           
-            try {
-                const response = await fetch('/api/deposit', {
-                    method: 'POST',
-                    body: formData
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification('Deposit submitted!');
-                    document.getElementById('deposit-modal').classList.add('hidden');
-                    document.getElementById('deposit-form').reset();
-                    checkAuth();
-                } else {
-                    showNotification(data.error || 'Deposit failed', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error.', 'error');
-            }
-        });
-        // Withdrawal events
-        document.getElementById('withdrawal-btn').addEventListener('click', () => {
-            document.getElementById('withdrawal-modal').classList.remove('hidden');
-        });
-        document.getElementById('cancel-withdrawal').addEventListener('click', () => {
-            document.getElementById('withdrawal-modal').classList.add('hidden');
-            document.getElementById('withdrawal-form').reset();
-        });
-        document.getElementById('withdrawal-amount').addEventListener('input', () => {
-            const hcoin = parseFloat(document.getElementById('withdrawal-amount').value) || 0;
-            document.getElementById('withdrawal-uzs-eq').textContent = (hcoin * currentPrice).toFixed(0);
-        });
-        document.getElementById('withdrawal-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-           
-            const formData = new FormData();
-            formData.append('amount', document.getElementById('withdrawal-amount').value);
-            formData.append('paymentMethod', document.getElementById('withdrawal-method').value);
-            formData.append('externalDetails', document.getElementById('withdrawal-external-details').value);
-            if (document.getElementById('withdrawal-screenshot').files[0]) {
-                formData.append('screenshot', document.getElementById('withdrawal-screenshot').files[0]);
-            }
-           
-            try {
-                const response = await fetch('/api/withdrawal', {
-                    method: 'POST',
-                    body: formData
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification('Withdrawal submitted!');
-                    document.getElementById('withdrawal-modal').classList.add('hidden');
-                    document.getElementById('withdrawal-form').reset();
-                    checkAuth();
-                } else {
-                    showNotification(data.error || 'Withdrawal failed', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error.', 'error');
-            }
-        });
+        
         // Logout
-        document.getElementById('logout-btn').addEventListener('click', async () => {
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
             try {
                 await fetch('/api/logout', { method: 'POST' });
                 window.location.href = 'register-login.html';
@@ -846,10 +600,12 @@
                 console.error('Logout failed:', error);
             }
         });
-        // Init
+        
+        // Initialization
         checkAuth();
-        setInterval(loadHcoinValue, 15000); // 5 min
-        setInterval(loadPriceHistory, 15000);
+        setInterval(loadHcoinValue, 15000);
+        setInterval(loadPriceHistory, 30000);
+        setInterval(loadUserNFTs, 60000);
     </script>
 </body>
 </html>

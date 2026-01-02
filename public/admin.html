@@ -4,505 +4,590 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - H-Coin Wallet</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Skeleton CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.24/skeleton.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        .gradient-bg {
-            background: linear-gradient(-45deg, #1e3c72, #2a5298, #1e3c72, #2a5298);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0c1445 0%, #1a237e 50%, #0f172a 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #333;
         }
-       
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        
+        .admin-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+            z-index: -1;
+            animation: subtleFloat 20s ease-in-out infinite;
         }
-       
-        .card-hover {
+        
+        @keyframes subtleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .navbar {
+            background: rgba(12, 20, 69, 0.9) !important;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .nav-link {
+            color: #e2e8f0 !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-link:hover {
+            color: #a0aec0 !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-link.active {
+            color: #60a5fa !important;
+            border-bottom: 2px solid #60a5fa;
+        }
+        
+        .navbar-brand {
+            color: #f1f5f9 !important;
+            font-weight: 600;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.98);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .stat-users { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .stat-hcoin { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .stat-pending { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .stat-value { background: linear-gradient(135deg, #10b981, #059669); }
+        .stat-trades { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+        
+        .table {
+            background: #f8fafc;
+        }
+        
+        .table th {
+            background: #e2e8f0;
+            color: #475569;
+            font-weight: 600;
+        }
+        
+        .btn-admin {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
             transition: all 0.3s ease;
         }
-       
-        .card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-edit:hover { background: #2563eb; }
+        .btn-freeze { background: #f59e0b; color: white; }
+        .btn-freeze:hover { background: #d97706; }
+        .btn-unfreeze { background: #10b981; color: white; }
+        .btn-unfreeze:hover { background: #059669; }
+        .btn-approve { background: #10b981; color: white; }
+        .btn-approve:hover { background: #059669; }
+        .btn-reject { background: #ef4444; color: white; }
+        .btn-reject:hover { background: #dc2626; }
+        
+        .status-badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
-       
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
+        
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+        
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
         }
-       
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .shape:nth-child(1) { width: 60px; height: 60px; top: 20%; left: 10%; animation-delay: 0s; }
+        .shape:nth-child(2) { width: 40px; height: 40px; top: 60%; right: 20%; animation-delay: 3s; }
+        .shape:nth-child(3) { width: 80px; height: 80px; bottom: 20%; left: 20%; animation-delay: 5s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(90deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success { background: #10b981; }
+        .notification.error { background: #ef4444; }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .navbar-nav {
+                background: rgba(12, 20, 69, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 8px;
+                margin-top: 0.5rem;
+            }
+            
+            .card {
+                margin-bottom: 0.75rem;
+            }
+            
+            body {
+                padding-top: 1.5rem;
+            }
+        }
+        
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .text-white-soft {
+            color: #f1f5f9;
+        }
+        
+        .header-text {
+            color: #e2e8f0;
         }
     </style>
 </head>
-<body class="gradient-bg min-h-screen">
-    <div id="threejs-bg" class="fixed inset-0 z-0"></div>
-   
+<body>
+    <div class="admin-bg"></div>
+    
     <!-- Navigation -->
-    <nav class="relative z-10 bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg py-4 px-6 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-purple-500 rounded-full"></div>
-                <span class="text-white text-xl font-bold">H-Coin Wallet Admin</span>
-            </div>
-           
-            <div class="hidden md:flex space-x-6">
-                <a href="admin.html" class="text-white font-semibold border-b-2 border-purple-400">Dashboard</a>
-                <a href="trade.html" class="text-white font-semibold hover:text-blue-200 transition">Trade</a>
-                <a href="index.html" class="text-white font-semibold hover:text-blue-200 transition">User Dashboard</a>
-            </div>
-           
-            <div class="flex items-center space-x-4">
-                <div id="user-info" class="text-white hidden">
-                    <span id="user-name" class="font-semibold"></span>
-                    <span class="ml-2 bg-green-500 px-2 py-1 rounded-full text-xs">Admin</span>
-                </div>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-300">
-                    Logout
-                </button>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold fs-4" href="admin.html">
+                <i class="fas fa-shield-alt me-2"></i>H-Coin Admin Panel
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="admin.html"><i class="fas fa-tachometer-alt me-1"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-users me-1"></i>User View</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger" href="register-login.html" id="logout-btn"><i class="fas fa-sign-out-alt me-1"></i> Logout</a></li>
+                </ul>
             </div>
         </div>
     </nav>
-   
-    <div class="relative z-10 container mx-auto py-8 px-4">
-        <div class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl p-6 mb-8 text-white">
-            <h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
-            <p class="text-blue-200">Manage users, transactions, H-Coin trades, NewEra transfers, and system settings</p>
+    
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    
+    <div class="container py-4 mt-5">
+        <!-- Header -->
+        <div class="text-center mb-4 animate__animated animate__fadeInDown">
+            <h1 class="display-5 fw-bold header-text mb-3">
+                <i class="fas fa-cogs me-2"></i>Admin Dashboard
+            </h1>
+            <p class="lead text-white-soft">Manage users, transactions, H-Coin, NFTs, and system settings.</p>
         </div>
-       
-        <!-- Statistics Cards (H-coin va trade qo'shildi, UZS stats qo'shildi) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">Total Users</p>
-                        <p id="total-users" class="text-2xl font-bold text-gray-800 mt-1">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                        </svg>
+        
+        <!-- Statistics Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4 col-lg">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon stat-users mb-3 mx-auto"></div>
+                        <h5 class="card-title text-muted mb-2">Total Users</h5>
+                        <h3 id="total-users" class="fw-bold text-primary">0</h3>
                     </div>
                 </div>
             </div>
-           
-            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">Total H-Coin</p>
-                        <p id="total-hcoin" class="text-2xl font-bold text-gray-800 mt-1">0 H-Coin</p>
-                    </div>
-                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                        </svg>
+            <div class="col-md-4 col-lg">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon stat-hcoin mb-3 mx-auto"></div>
+                        <h5 class="card-title text-muted mb-2">Total H-Coin</h5>
+                        <h3 id="total-hcoin" class="fw-bold text-primary">0 H-Coin</h3>
                     </div>
                 </div>
             </div>
-           
-            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">Pending Transactions</p>
-                        <p id="pending-transactions" class="text-2xl font-bold text-gray-800 mt-1">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+            <div class="col-md-4 col-lg">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon stat-pending mb-3 mx-auto"></div>
+                        <h5 class="card-title text-muted mb-2">Pending Transactions</h5>
+                        <h3 id="pending-transactions" class="fw-bold text-primary">0</h3>
                     </div>
                 </div>
             </div>
-           
-            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">H-Coin Value</p>
-                        <p id="hcoin-value" class="text-2xl font-bold text-gray-800 mt-1">50 UZS</p> <!-- O'ZGARTIRILDI: 1000 dan 50 ga -->
-                    </div>
-                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
+            <div class="col-md-4 col-lg">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon stat-value mb-3 mx-auto"></div>
+                        <h5 class="card-title text-muted mb-2">H-Coin Value</h5>
+                        <h3 id="hcoin-value" class="fw-bold text-primary">50 UZS</h3>
                     </div>
                 </div>
             </div>
-           
-            <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">Total Trades</p>
-                        <p id="total-trades" class="text-2xl font-bold text-gray-800 mt-1">0</p>
-                    </div>
-                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
+            <div class="col-md-4 col-lg">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon stat-trades mb-3 mx-auto"></div>
+                        <h5 class="card-title text-muted mb-2">Total Trades</h5>
+                        <h3 id="total-trades" class="fw-bold text-primary">0</h3>
                     </div>
                 </div>
             </div>
         </div>
-       
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column - Users and Transactions -->
-            <div class="lg:col-span-2 space-y-8">
-                <!-- Pending Transactions (buy/sell/deposit/withdrawal UZS handling) -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-gray-800">Pending Transactions</h2>
-                        <div class="flex space-x-2">
-                            <button id="refresh-transactions" class="bg-gray-100 hover:bg-gray-200 text-gray-800 p-2 rounded-lg transition duration-300">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
+        
+        <div class="row g-4">
+            <!-- Left Column - Tables -->
+            <div class="col-lg-8">
+                <!-- Pending Transactions -->
+                <div class="card animate__animated animate__fadeInLeft mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0"><i class="fas fa-clock me-2 text-warning"></i>Pending Transactions</h5>
+                            <button id="refresh-transactions" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-sync-alt"></i> Refresh
                             </button>
                         </div>
-                    </div>
-                   
-                    <div id="pending-transactions-list" class="space-y-4">
-                        <div class="text-center py-8 text-gray-500">
-                            <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <p class="mt-2">No pending transactions</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pending-transactions-list">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin me-2"></i>Loading...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-               
-                <!-- Users List (H-coin ko'rsatish) -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-gray-800">All Users</h2>
-                        <div class="flex space-x-2">
-                            <input type="text" id="user-search" placeholder="Search users..." class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 text-sm">
-                            <button id="refresh-users" class="bg-gray-100 hover:bg-gray-200 text-gray-800 p-2 rounded-lg transition duration-300">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                            </button>
+                
+                <!-- Users List -->
+                <div class="card animate__animated animate__fadeInLeft">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0"><i class="fas fa-users me-2 text-info"></i>All Users</h5>
+                            <div class="d-flex">
+                                <input type="text" id="user-search" class="form-control form-control-sm me-2" placeholder="Search users...">
+                                <button id="refresh-users" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                   
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-4 py-3">User</th>
-                                    <th scope="col" class="px-4 py-3">Wallet</th>
-                                    <th scope="col" class="px-4 py-3">H-Coin Balance</th>
-                                    <th scope="col" class="px-4 py-3">UZS Balance</th>
-                                    <th scope="col" class="px-4 py-3">Status</th>
-                                    <th scope="col" class="px-4 py-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-list">
-                                <tr>
-                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                        Loading users...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Wallet</th>
+                                        <th>H-Coin</th>
+                                        <th>UZS</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-list">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin me-2"></i>Loading...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-           
-            <!-- Right Column - Controls and Statistics -->
-            <div class="space-y-8">
+            
+            <!-- Right Column - Controls -->
+            <div class="col-lg-4">
                 <!-- H-Coin Value Control -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">H-Coin Value Control</h2>
-                   
-                    <form id="hcoin-form" class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="hcoin-value-input">
-                                New H-Coin Value (UZS)
-                            </label>
-                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                   id="hcoin-value-input" type="number" step="0.01" min="0.01" value="50" required> <!-- O'ZGARTIRILDI: value 1000 dan 50 ga -->
-                        </div>
-                       
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="hcoin-change">
-                                Percentage Change
-                            </label>
-                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                   id="hcoin-change" type="number" step="0.01" value="0.00" required>
-                        </div>
-                       
-                        <button type="submit" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition duration-300">
-                            Update H-Coin Value
-                        </button>
-                    </form>
+                <div class="card animate__animated animate__fadeInRight mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="fas fa-coins me-2 text-primary"></i>H-Coin Value Control</h5>
+                        <form id="hcoin-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">New Value (UZS)</label>
+                                <input type="number" class="form-control" id="hcoin-value-input" step="0.01" min="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Change (%)</label>
+                                <input type="number" class="form-control" id="hcoin-change" step="0.01" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Update Value</button>
+                        </form>
+                    </div>
                 </div>
-
-                <!-- Conversion Rates Control -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Conversion Rates Control</h2>
-                    <div id="conversions-list" class="space-y-4">
-                        <div class="text-center py-4 text-gray-500">
-                            <p>Loading conversion rates...</p>
+                
+                <!-- Conversion Rates -->
+                <div class="card animate__animated animate__fadeInRight mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="fas fa-exchange-alt me-2 text-info"></i>Conversion Rates</h5>
+                        <div id="conversions-list">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </div>
                         </div>
                     </div>
                 </div>
-               
-                <!-- Direct NewEra Transfer (yangi) -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Direct Transfer to NewEra</h2>
-                   
-                    <form id="newera-transfer-form" class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="newera-username">
-                                NewEra Username
-                            </label>
-                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                   id="newera-username" type="text" placeholder="Enter NewEra username" required>
-                        </div>
-                       
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="newera-amount">
-                                Amount (H-Coin)
-                            </label>
-                            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                   id="newera-amount" type="number" step="0.01" min="0.01" required>
-                        </div>
-                       
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-bold mb-2" for="newera-description">
-                                Description (Optional)
-                            </label>
-                            <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                      id="newera-description" rows="2" placeholder="Add a note"></textarea>
-                        </div>
-                       
-                        <button type="submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition duration-300">
-                            Send to NewEra
-                        </button>
-                    </form>
+                
+                <!-- Direct NewEra Transfer -->
+                <div class="card animate__animated animate__fadeInRight mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="fas fa-share me-2 text-warning"></i>NewEra Transfer</h5>
+                        <form id="newera-transfer-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Username</label>
+                                <input type="text" class="form-control" id="newera-username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Amount (H-Coin)</label>
+                                <input type="number" class="form-control" id="newera-amount" step="0.01" min="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Description</label>
+                                <textarea class="form-control" id="newera-description" rows="2"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100">Send</button>
+                        </form>
+                    </div>
                 </div>
-               
-                <!-- Statistics (kengaytirildi: buys/sells/deposit/withdrawal UZS) -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Statistics</h2>
-                   
-                    <div class="space-y-4">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Period:</span>
-                            <select id="stats-period" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-1 text-sm">
+                
+                <!-- Statistics -->
+                <div class="card animate__animated animate__fadeInRight">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="fas fa-chart-bar me-2 text-success"></i>Statistics</h5>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Period</label>
+                            <select id="stats-period" class="form-select form-select-sm">
                                 <option value="weekly">Weekly</option>
                                 <option value="monthly">Monthly</option>
                                 <option value="yearly">Yearly</option>
                             </select>
                         </div>
-                       
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Total Transactions:</span>
-                            <span id="stats-count" class="font-semibold">0</span>
+                        <div id="stats-display" class="small text-muted">
+                            <div class="mb-2"><strong>Total Transactions:</strong> <span id="stats-count">0</span></div>
+                            <div class="mb-2"><strong>Total Amount:</strong> <span id="stats-amount">0 H-Coin</span></div>
+                            <div class="mb-2"><strong>Deposits:</strong> <span id="stats-deposits">0</span></div>
+                            <div class="mb-2"><strong>Withdrawals:</strong> <span id="stats-withdrawals">0</span></div>
+                            <div class="mb-2"><strong>Transfers:</strong> <span id="stats-transfers">0</span></div>
+                            <div class="mb-2"><strong>Buys:</strong> <span id="stats-buys">0</span></div>
+                            <div class="mb-2"><strong>Sells:</strong> <span id="stats-sells">0</span></div>
+                            <div class="mb-2"><strong>NFT Creates:</strong> <span id="stats-nft-creates">0</span></div>
+                            <div class="mb-2"><strong>NFT Buys:</strong> <span id="stats-nft-buys">0</span></div>
+                            <div class="mb-2"><strong>NFT Sells:</strong> <span id="stats-nft-sells">0</span></div>
                         </div>
-                       
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Total Amount (H-Coin):</span>
-                            <span id="stats-amount" class="font-semibold">0 H-Coin</span>
-                        </div>
-
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Deposits (UZS):</span>
-                            <span id="stats-deposits" class="font-semibold">0 (0 UZS)</span> <!-- O'ZGARTIRILDI: H-Coin dan UZS ga -->
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Withdrawals (UZS):</span>
-                            <span id="stats-withdrawals" class="font-semibold">0 (0 UZS)</span> <!-- O'ZGARTIRILDI: H-Coin dan UZS ga -->
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Transfers:</span>
-                            <span id="stats-transfers" class="font-semibold">0 (0 H-Coin)</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Buys:</span>
-                            <span id="stats-buys" class="font-semibold">0 (0 H-Coin)</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Sells:</span>
-                            <span id="stats-sells" class="font-semibold">0 (0 H-Coin)</span>
-                        </div>
-                       
-                        <button id="load-stats" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">
-                            Load Statistics
-                        </button>
+                        <button id="load-stats" class="btn btn-success btn-sm w-100 mt-2">Load Stats</button>
+                        <canvas id="stats-chart" class="mt-3" height="200"></canvas>
                     </div>
-
-                    <canvas id="stats-chart" class="mt-6" width="400" height="200"></canvas>
                 </div>
-               
-                <!-- Top Users (H-coin bo'yicha) -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Top Users by H-Coin Balance</h2>
-                   
-                    <div id="top-users" class="space-y-4">
-                        <div class="text-center py-4 text-gray-500">
-                            <p>Loading top users...</p>
+                
+                <!-- Top Users -->
+                <div class="card animate__animated animate__fadeInRight">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="fas fa-trophy me-2 text-warning"></i>Top Users (H-Coin)</h5>
+                        <div id="top-users">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-   
+    
     <!-- Transaction Details Modal -->
-    <div id="transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Transaction Details</h3>
-                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-           
-            <div id="transaction-details">
-                <!-- Transaction details will be loaded here -->
-            </div>
-           
-            <div id="transaction-actions" class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
-                <!-- Action buttons will be loaded here -->
+    <div class="modal fade" id="transactionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>Transaction Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="transaction-details">
+                    <!-- Dynamic content -->
+                </div>
+                <div class="modal-footer" id="transaction-actions">
+                    <!-- Dynamic actions -->
+                </div>
             </div>
         </div>
     </div>
-   
-    <!-- User Edit Modal (H-Coin va UZS uchun) -->
-    <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Edit User Balances</h3>
-                <button id="close-user-modal" class="text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+    
+    <!-- User Edit Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="user-form">
+                        <input type="hidden" id="edit-user-id">
+                        <div class="mb-3">
+                            <label class="form-label">User</label>
+                            <p id="edit-user-name" class="fw-medium"></p>
+                            <p class="small text-muted" id="edit-user-wallet"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">H-Coin Balance</label>
+                            <input type="number" class="form-control" id="edit-hcoin-balance" step="0.01" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">UZS Balance</label>
+                            <input type="number" class="form-control" id="edit-uzs-balance" step="1" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="save-user-changes" class="btn btn-primary">Save</button>
+                </div>
             </div>
-           
-            <form id="user-form">
-                <input type="hidden" id="edit-user-id">
-               
-                <div class="mb-4">
-                    <p class="text-gray-600">User: <span id="edit-user-name" class="font-semibold"></span></p>
-                    <p class="text-gray-600 text-sm">Wallet: <span id="edit-user-wallet" class="font-mono"></span></p>
-                </div>
-               
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-hcoin-balance">
-                        H-Coin Balance
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="edit-hcoin-balance" type="number" step="0.01" min="0" required>
-                </div>
-               
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-uzs-balance">
-                        UZS Balance
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="edit-uzs-balance" type="number" step="1" min="0" required>
-                </div>
-               
-                <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancel-user-edit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
-                        Save Changes
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
-
+    
     <!-- Conversion Edit Modal -->
-    <div id="conversion-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Edit Conversion Rate</h3>
-                <button id="close-conversion-modal" class="text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+    <div class="modal fade" id="conversionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-exchange-alt me-2"></i>Edit Rate</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="conversion-form">
+                        <input type="hidden" id="edit-currency">
+                        <div class="mb-3">
+                            <label class="form-label">Currency</label>
+                            <p id="current-currency" class="fw-medium"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Rate</label>
+                            <input type="number" class="form-control" id="edit-rate" step="0.01" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="save-conversion" class="btn btn-primary">Save</button>
+                </div>
             </div>
-           
-            <form id="conversion-form">
-                <input type="hidden" id="edit-currency">
-               
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="current-rate">
-                        Currency
-                    </label>
-                    <p class="text-gray-600" id="current-currency"></p>
-                </div>
-               
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit-rate">
-                        New Rate (per 1 H-Coin)
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                           id="edit-rate" type="number" step="0.01" min="0" required>
-                </div>
-               
-                <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancel-conversion-edit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-300">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
-                        Save Changes
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
-   
+    
     <!-- Notification -->
-    <div id="notification" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg hidden z-50"></div>
+    <div id="notification" class="notification"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        // Three.js Background Animation (saqlangan)
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('threejs-bg').appendChild(renderer.domElement);
-        const geometry = new THREE.DodecahedronGeometry(2, 0);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x3b82f6,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
-        });
-        const dodecahedron = new THREE.Mesh(geometry, material);
-        scene.add(dodecahedron);
-        camera.position.z = 5;
-        function animate() {
-            requestAnimationFrame(animate);
-            dodecahedron.rotation.x += 0.01;
-            dodecahedron.rotation.y += 0.005;
-            renderer.render(scene, camera);
-        }
-        animate();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-        // Admin data and functions
+        // Global variables
         let currentUser = null;
         let allUsers = [];
         let allTransactions = [];
         let pendingTransactions = [];
         let conversionRates = [];
+        let allNFTs = [];
+        let allListings = [];
         let statsChart = null;
-        // Check authentication and admin status
+        
+        // Check authentication
         async function checkAuth() {
             try {
                 const response = await fetch('/api/user');
@@ -512,20 +597,16 @@
                         window.location.href = 'index.html';
                         return;
                     }
-                    displayUserInfo();
                     loadData();
                 } else {
                     window.location.href = 'register-login.html';
                 }
             } catch (error) {
+                console.error('Auth check failed:', error);
                 window.location.href = 'register-login.html';
             }
         }
-        // Display user information
-        function displayUserInfo() {
-            document.getElementById('user-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
-            document.getElementById('user-info').classList.remove('hidden');
-        }
+        
         // Load all data
         async function loadData() {
             await Promise.all([
@@ -534,93 +615,125 @@
                 loadHcoinValue(),
                 loadConversions(),
                 loadStatistics(),
-                loadTopUsers()
+                loadTopUsers(),
+                loadNFTs(),
+                loadListings()
             ]);
+            updateUserStats();
+            updateTransactionStats();
         }
-        // Load all users
+        
+        // Load users
         async function loadUsers() {
             try {
-                const response = await fetch('/api/admin/users');
+                const search = document.getElementById('user-search').value;
+                const url = search ? `/api/admin/users?search=${encodeURIComponent(search)}` : '/api/admin/users';
+                const response = await fetch(url);
                 if (response.ok) {
                     allUsers = await response.json();
                     displayUsers(allUsers);
-                    updateUserStats();
                 }
             } catch (error) {
                 console.error('Failed to load users:', error);
                 showNotification('Failed to load users', 'error');
             }
         }
-        // Display users in table (H-Coin va UZS qo'shildi)
+        
+        // Display users
         function displayUsers(users) {
-            const container = document.getElementById('users-list');
-           
+            const tbody = document.getElementById('users-list');
             if (users.length === 0) {
-                container.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            No users found
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No users found</td></tr>';
                 return;
             }
-           
-            container.innerHTML = users.map(user => {
+            tbody.innerHTML = users.map(user => {
+                const statusClass = user.isFrozen ? 'status-rejected' : 'status-approved';
                 const statusText = user.isFrozen ? 'Frozen' : 'Active';
-                const statusClass = user.isFrozen ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
-               
                 return `
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="px-4 py-4">
-                            <div class="flex items-center space-x-3">
-                                <img src="${user.avatar || 'https://via.placeholder.com/32'}" alt="Avatar" class="w-8 h-8 rounded-full">
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="${user.avatar || 'https://via.placeholder.com/32'}" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
                                 <div>
-                                    <p class="font-medium text-gray-900">${user.firstName} ${user.lastName}</p>
-                                    <p class="text-sm text-gray-500">@${user.username}</p>
+                                    <div class="fw-medium">${user.firstName} ${user.lastName}</div>
+                                    <small class="text-muted">@${user.username}</small>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-4 font-mono text-sm">${user.walletNumber}</td>
-                        <td class="px-4 py-4 font-semibold text-purple-600">${user.hcoinBalance.toFixed(2)} H-Coin</td>
-                        <td class="px-4 py-4 font-semibold text-green-600">${user.uzsBalance.toFixed(0)} UZS</td>
-                        <td class="px-4 py-4">
-                            <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${statusText}</span>
-                        </td>
-                        <td class="px-4 py-4">
-                            <div class="flex space-x-2">
-                                <button class="edit-user-btn bg-blue-100 hover:bg-blue-200 text-blue-800 p-1 rounded transition duration-300" data-id="${user._id}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
-                                </button>
-                                <button class="freeze-user-btn ${user.isFrozen ? 'bg-green-100 hover:bg-green-200 text-green-800' : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800'} p-1 rounded transition duration-300" data-id="${user._id}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${user.isFrozen ? 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z' : 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'}"></path>
-                                    </svg>
-                                </button>
-                            </div>
+                        <td><code class="small">${user.walletNumber}</code></td>
+                        <td><strong>${user.hcoinBalance.toFixed(2)} H-Coin</strong></td>
+                        <td><strong>${user.uzsBalance.toFixed(0)} UZS</strong></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-edit me-1" onclick="openUserEditModal('${user._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm ${user.isFrozen ? 'btn-unfreeze' : 'btn-freeze'}" onclick="toggleUserFreeze('${user._id}')">
+                                <i class="fas fa-${user.isFrozen ? 'play' : 'pause'}"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
             }).join('');
-           
-            // Event listeners
-            document.querySelectorAll('.edit-user-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const userId = this.getAttribute('data-id');
-                    openUserEditModal(userId);
-                });
-            });
-           
-            document.querySelectorAll('.freeze-user-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const userId = this.getAttribute('data-id');
-                    toggleUserFreeze(userId);
-                });
-            });
         }
-        // Load all transactions (buy/sell qo'shildi)
+        
+        // Open user edit modal
+        async function openUserEditModal(userId) {
+            try {
+                const response = await fetch(`/api/user/${userId}`);
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('edit-user-id').value = user._id;
+                    document.getElementById('edit-user-name').textContent = `${user.firstName} ${user.lastName}`;
+                    document.getElementById('edit-user-wallet').textContent = user.walletNumber;
+                    document.getElementById('edit-hcoin-balance').value = user.hcoinBalance;
+                    document.getElementById('edit-uzs-balance').value = user.uzsBalance;
+                    new bootstrap.Modal(document.getElementById('userModal')).show();
+                }
+            } catch (error) {
+                showNotification('Failed to load user data', 'error');
+            }
+        }
+        
+        // Save user changes
+        document.getElementById('save-user-changes').addEventListener('click', async () => {
+            const userId = document.getElementById('edit-user-id').value;
+            const hcoinBalance = parseFloat(document.getElementById('edit-hcoin-balance').value);
+            const uzsBalance = parseFloat(document.getElementById('edit-uzs-balance').value);
+            try {
+                const response = await fetch(`/api/admin/user/${userId}/balance`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hcoinBalance, uzsBalance })
+                });
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                    loadUsers();
+                    showNotification('User updated successfully');
+                } else {
+                    showNotification('Failed to update user', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error', 'error');
+            }
+        });
+        
+        // Toggle user freeze
+        async function toggleUserFreeze(userId) {
+            try {
+                const response = await fetch(`/api/admin/user/${userId}/freeze`, { method: 'PUT' });
+                if (response.ok) {
+                    loadUsers();
+                    showNotification('User status updated');
+                } else {
+                    showNotification('Failed to update status', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error', 'error');
+            }
+        }
+        
+        // Load transactions
         async function loadTransactions() {
             try {
                 const response = await fetch('/api/admin/transactions');
@@ -628,105 +741,103 @@
                     allTransactions = await response.json();
                     pendingTransactions = allTransactions.filter(t => t.status === 'pending');
                     displayPendingTransactions();
-                    updateTransactionStats();
                 }
             } catch (error) {
                 console.error('Failed to load transactions:', error);
                 showNotification('Failed to load transactions', 'error');
             }
         }
-        // Display pending transactions (buy/sell/deposit/withdrawal UZS handling)
+        
+        // Display pending transactions
         function displayPendingTransactions() {
-            const container = document.getElementById('pending-transactions-list');
-           
+            const tbody = document.getElementById('pending-transactions-list');
             if (pendingTransactions.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="mt-2">No pending transactions</p>
-                    </div>
-                `;
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No pending transactions</td></tr>';
                 return;
             }
-           
-            container.innerHTML = pendingTransactions.map(transaction => {
-                let title = '';
-                let subtitle = '';
-                let methodText = transaction.paymentMethod ? `(${transaction.paymentMethod.toUpperCase()})` : '';
-                const fromUser = transaction.fromUser ? `${transaction.fromUser.firstName} ${transaction.fromUser.lastName}` : 'Admin';
-                const toUser = transaction.toUser ? `${transaction.toUser.firstName} ${transaction.toUser.lastName}` : 'Admin';
-                let amountText = transaction.type === 'deposit' || transaction.type === 'withdrawal' ? 
-                                 `${transaction.amount.toFixed(0)} UZS` : 
-                                 `${transaction.amount.toFixed(2)} H-Coin`; // O'ZGARTIRILDI: deposit/withdrawal uchun UZS ko'rsatish
-               
-                if (transaction.type === 'transfer') {
-                    title = 'Transfer';
-                    subtitle = `From: ${fromUser} → To: ${toUser}`;
-                } else if (transaction.type === 'deposit') {
-                    title = 'Deposit';
-                    subtitle = `To: ${toUser} ${methodText}`;
-                } else if (transaction.type === 'withdrawal') {
-                    title = 'Withdrawal';
-                    subtitle = `From: ${fromUser} ${methodText}`;
-                } else if (transaction.type === 'buy_hcoin') {
-                    title = 'Buy H-Coin';
-                    subtitle = `User: ${fromUser} ${methodText}`;
-                } else if (transaction.type === 'sell_hcoin') {
-                    title = 'Sell H-Coin';
-                    subtitle = `User: ${fromUser} ${methodText}`;
-                }
-               
+            tbody.innerHTML = pendingTransactions.map(t => {
+                const user = t.fromUser || t.toUser || { firstName: 'System', lastName: '' };
+                const method = t.paymentMethod ? `(${t.paymentMethod.toUpperCase()})` : '';
+                const amount = t.type === 'deposit' || t.type === 'withdrawal' ? `${t.amount.toFixed(0)} UZS` : `${t.amount.toFixed(2)} H-Coin`;
                 return `
-                    <div class="transaction-item border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition duration-300 cursor-pointer" data-id="${transaction._id}">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-semibold text-gray-800">${title}</p>
-                                <p class="text-sm text-gray-600 mt-1">${subtitle}</p>
-                                ${transaction.externalDetails ? `<p class="text-sm text-gray-500 mt-1">Details: ${transaction.externalDetails}</p>` : ''}
-                                <p class="text-sm text-gray-500 mt-1">${new Date(transaction.createdAt).toLocaleString()}</p>
-                                ${transaction.description ? `<p class="text-sm text-gray-600 mt-1">${transaction.description}</p>` : ''}
-                                ${transaction.priceAtTime ? `<p class="text-sm text-purple-600 mt-1">Price: ${transaction.priceAtTime} UZS</p>` : ''}
-                                ${transaction.fee ? `<p class="text-sm text-red-600 mt-1">Fee: ${transaction.fee.toFixed(2)}</p>` : ''}
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-lg text-gray-800">${amountText}</p>
-                                <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full mt-1 inline-block">Pending</span>
-                            </div>
-                        </div>
-                        ${transaction.screenshot ? `
-                        <div class="mt-3">
-                            <p class="text-sm text-gray-600">Screenshot:</p>
-                            <img src="${transaction.screenshot}" alt="Payment screenshot" class="w-20 h-20 object-cover rounded border mt-1">
-                        </div>
-                        ` : ''}
-                    </div>
+                    <tr>
+                        <td><span class="fw-medium">${t.type.replace('_', ' ').toUpperCase()}</span></td>
+                        <td>${user.firstName} ${user.lastName}</td>
+                        <td><strong>${amount}</strong></td>
+                        <td>${method}</td>
+                        <td><small class="text-muted">${new Date(t.createdAt).toLocaleDateString()}</small></td>
+                        <td>
+                            <button class="btn btn-sm btn-approve me-1" onclick="updateTransaction('${t._id}', 'approved')">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button class="btn btn-sm btn-reject" onclick="updateTransaction('${t._id}', 'rejected')">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </td>
+                    </tr>
                 `;
             }).join('');
-           
-            document.querySelectorAll('.transaction-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const transactionId = this.getAttribute('data-id');
-                    showTransactionDetails(transactionId);
-                });
-            });
         }
+        
+        // Update transaction status
+        async function updateTransaction(transactionId, status) {
+            if (confirm(`Confirm ${status}?`)) {
+                try {
+                    const response = await fetch(`/api/admin/transaction/${transactionId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                    });
+                    if (response.ok) {
+                        loadTransactions();
+                        showNotification(`Transaction ${status} successfully`);
+                    } else {
+                        showNotification('Failed to update transaction', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Network error', 'error');
+                }
+            }
+        }
+        
         // Load H-Coin value
         async function loadHcoinValue() {
             try {
                 const response = await fetch('/api/hcoin-value');
                 if (response.ok) {
-                    const hcoinValue = await response.json();
-                    document.getElementById('hcoin-value').textContent = `${hcoinValue.value.toFixed(2)} UZS`;
-                    document.getElementById('hcoin-value-input').value = hcoinValue.value.toFixed(2);
-                    document.getElementById('hcoin-change').value = hcoinValue.change.toFixed(2);
+                    const data = await response.json();
+                    document.getElementById('hcoin-value').textContent = `${data.value.toFixed(2)} UZS`;
+                    document.getElementById('hcoin-value-input').value = data.value.toFixed(2);
+                    document.getElementById('hcoin-change').value = data.change.toFixed(2);
                 }
             } catch (error) {
                 console.error('Failed to load H-Coin value:', error);
             }
         }
-        // Load conversions (saqlangan)
+        
+        // Update H-Coin value
+        document.getElementById('hcoin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const value = parseFloat(document.getElementById('hcoin-value-input').value);
+            const change = parseFloat(document.getElementById('hcoin-change').value);
+            try {
+                const response = await fetch('/api/hcoin-value', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value, change })
+                });
+                if (response.ok) {
+                    loadHcoinValue();
+                    showNotification('H-Coin value updated');
+                } else {
+                    showNotification('Failed to update value', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error', 'error');
+            }
+        });
+        
+        // Load conversions
         async function loadConversions() {
             try {
                 const response = await fetch('/api/conversions');
@@ -739,76 +850,59 @@
                 showNotification('Failed to load conversions', 'error');
             }
         }
-        // Display conversions (saqlangan, H-Coin ga o'zgartirildi)
+        
+        // Display conversions
         function displayConversions() {
             const container = document.getElementById('conversions-list');
-           
             if (conversionRates.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-4 text-gray-500">
-                        <p>No conversion rates</p>
-                    </div>
-                `;
+                container.innerHTML = '<div class="text-center text-muted py-3">No rates</div>';
                 return;
             }
-           
             container.innerHTML = conversionRates.map(rate => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg font-bold">${rate.currency}</span>
-                        <span class="text-sm text-gray-600">1 H-Coin = ${rate.rate.toFixed(4)}</span>
+                <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded mb-2">
+                    <span>${rate.currency}</span>
+                    <div>
+                        <span class="fw-medium">${rate.rate.toFixed(4)}</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="openConversionEdit('${rate._id}', '${rate.currency}', ${rate.rate})">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </div>
-                    <button class="edit-conversion-btn bg-blue-100 hover:bg-blue-200 text-blue-800 p-2 rounded transition duration-300" data-currency="${rate.currency}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                    </button>
                 </div>
             `).join('');
-           
-            document.querySelectorAll('.edit-conversion-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const currency = this.getAttribute('data-currency');
-                    openConversionEditModal(currency);
-                });
-            });
         }
-        // Open conversion edit modal (saqlangan)
-        function openConversionEditModal(currency) {
-            const rate = conversionRates.find(r => r.currency === currency);
-            if (!rate) return;
-           
-            document.getElementById('edit-currency').value = rate.currency;
-            document.getElementById('current-currency').textContent = rate.currency;
-            document.getElementById('edit-rate').value = rate.rate;
-           
-            document.getElementById('conversion-modal').classList.remove('hidden');
+        
+        // Open conversion edit
+        function openConversionEdit(id, currency, rate) {
+            document.getElementById('edit-currency').value = id;
+            document.getElementById('current-currency').textContent = currency;
+            document.getElementById('edit-rate').value = rate;
+            new bootstrap.Modal(document.getElementById('conversionModal')).show();
         }
-        // Update conversion rate (saqlangan)
-        async function updateConversionRate(currency, newRate) {
+        
+        // Save conversion
+        document.getElementById('save-conversion').addEventListener('click', async () => {
+            const id = document.getElementById('edit-currency').value;
+            const rate = parseFloat(document.getElementById('edit-rate').value);
+            const currency = document.getElementById('current-currency').textContent;
             try {
                 const response = await fetch('/api/admin/conversions', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ currency, rate: parseFloat(newRate) })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currency, rate })
                 });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification('Conversion rate updated successfully!');
-                    document.getElementById('conversion-modal').classList.add('hidden');
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('conversionModal')).hide();
                     loadConversions();
+                    showNotification('Rate updated');
                 } else {
-                    showNotification(data.error || 'Failed to update conversion rate', 'error');
+                    showNotification('Failed to update rate', 'error');
                 }
             } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
+                showNotification('Network error', 'error');
             }
-        }
-        // Load statistics (kengaytirildi, UZS uchun)
+        });
+        
+        // Load statistics
         async function loadStatistics() {
             try {
                 const period = document.getElementById('stats-period').value;
@@ -817,455 +911,152 @@
                     const stats = await response.json();
                     document.getElementById('stats-count').textContent = stats.transactionCount;
                     document.getElementById('stats-amount').textContent = `${stats.totalAmount.toFixed(2)} H-Coin`;
-                    document.getElementById('stats-deposits').textContent = `${stats.depositCount} (${stats.depositAmount.toFixed(0)} UZS)`; // O'ZGARTIRILDI: toFixed(2) dan (0) ga, H-Coin dan UZS ga
-                    document.getElementById('stats-withdrawals').textContent = `${stats.withdrawalCount} (${stats.withdrawalAmount.toFixed(0)} UZS)`; // O'ZGARTIRILDI: toFixed(2) dan (0) ga, H-Coin dan UZS ga
+                    document.getElementById('stats-deposits').textContent = `${stats.depositCount} (${stats.depositAmount.toFixed(0)} UZS)`;
+                    document.getElementById('stats-withdrawals').textContent = `${stats.withdrawalCount} (${stats.withdrawalAmount.toFixed(0)} UZS)`;
                     document.getElementById('stats-transfers').textContent = `${stats.transferCount} (${stats.transferAmount.toFixed(2)} H-Coin)`;
                     document.getElementById('stats-buys').textContent = `${stats.buyCount} (${stats.buyAmount.toFixed(2)} H-Coin)`;
                     document.getElementById('stats-sells').textContent = `${stats.sellCount} (${stats.sellAmount.toFixed(2)} H-Coin)`;
+                    document.getElementById('stats-nft-creates').textContent = `${stats.nftCreateCount} (${stats.nftCreateAmount.toFixed(2)} H-Coin)`;
+                    document.getElementById('stats-nft-buys').textContent = `${stats.nftBuyCount} (${stats.nftBuyAmount.toFixed(2)} H-Coin)`;
+                    document.getElementById('stats-nft-sells').textContent = `${stats.nftSellCount} (${stats.nftSellAmount.toFixed(2)} H-Coin)`;
                     updateStatsChart(stats);
                 }
             } catch (error) {
                 console.error('Failed to load statistics:', error);
             }
         }
-        // Update stats chart (buys/sells qo'shildi, deposit/withdrawal UZS e'tiborsiz)
+        
+        // Update stats chart
         function updateStatsChart(stats) {
             const ctx = document.getElementById('stats-chart').getContext('2d');
-            if (statsChart) {
-                statsChart.destroy();
-            }
+            if (statsChart) statsChart.destroy();
             statsChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Transfers', 'Buys', 'Sells'], // O'ZGARTIRILDI: Deposits/Withdrawals olib tashlandi, chunki UZS
+                    labels: ['Transfers', 'Buys', 'Sells', 'NFT Buys', 'Deposits', 'Withdrawals'],
                     datasets: [{
-                        data: [stats.transferAmount, stats.buyAmount, stats.sellAmount],
-                        backgroundColor: ['#3B82F6', '#8B5CF6', '#F59E0B']
+                        data: [stats.transferAmount, stats.buyAmount, stats.sellAmount, stats.nftBuyAmount, stats.depositAmount, stats.withdrawalAmount],
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#6b7280']
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
         }
-        // Load top users (H-Coin bo'yicha)
+        
+        // Load top users
         async function loadTopUsers() {
             try {
-                const response = await fetch('/api/admin/statistics?period=weekly');
+                const response = await fetch('/api/admin/statistics');
                 if (response.ok) {
                     const stats = await response.json();
-                    displayTopUsers(stats.topUsers);
+                    const container = document.getElementById('top-users');
+                    if (stats.topUsers.length === 0) {
+                        container.innerHTML = '<div class="text-center text-muted py-3">No top users</div>';
+                        return;
+                    }
+                    container.innerHTML = stats.topUsers.map((user, index) => `
+                        <div class="d-flex align-items-center p-2 bg-light rounded mb-2">
+                            <span class="fw-bold text-primary me-2">${index + 1}.</span>
+                            <img src="https://via.placeholder.com/32" class="rounded-circle me-2" width="32" height="32">
+                            <div class="flex-grow-1">
+                                <div class="fw-medium">${user.firstName} ${user.lastName}</div>
+                                <small class="text-muted">${user.walletNumber}</small>
+                            </div>
+                            <strong>${user.hcoinBalance.toFixed(2)} H-Coin</strong>
+                        </div>
+                    `).join('');
                 }
             } catch (error) {
                 console.error('Failed to load top users:', error);
             }
         }
-        // Display top users (H-Coin)
-        function displayTopUsers(topUsers) {
-            const container = document.getElementById('top-users');
-           
-            if (!topUsers || topUsers.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-4 text-gray-500">
-                        <p>No user data available</p>
-                    </div>
-                `;
-                return;
+        
+        // Load NFTs
+        async function loadNFTs() {
+            try {
+                const response = await fetch('/api/admin/nfts');
+                if (response.ok) {
+                    allNFTs = await response.json();
+                    displayNFTs(allNFTs);
+                }
+            } catch (error) {
+                console.error('Failed to load NFTs:', error);
             }
-           
-            container.innerHTML = topUsers.map((user, index) => {
-                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-               
-                return `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <span class="text-xl">${medal}</span>
-                            <div>
-                                <p class="font-medium text-gray-800">${user.firstName} ${user.lastName}</p>
-                                <p class="text-sm text-gray-500">${user.walletNumber}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-bold text-purple-600">${user.hcoinBalance.toFixed(2)} H-Coin</p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
-        // Update user statistics (H-Coin)
+        
+        // Display NFTs
+        function displayNFTs(nfts) {
+            // Similar to users, but for NFTs table - implement as needed
+        }
+        
+        // Load Listings
+        async function loadListings() {
+            try {
+                const response = await fetch('/api/admin/listings');
+                if (response.ok) {
+                    allListings = await response.json();
+                    displayListings(allListings);
+                }
+            } catch (error) {
+                console.error('Failed to load listings:', error);
+            }
+        }
+        
+        // Display Listings
+        function displayListings(listings) {
+            // Similar to NFTs
+        }
+        
+        // Update user stats
         function updateUserStats() {
             document.getElementById('total-users').textContent = allUsers.length;
-           
             const totalHcoin = allUsers.reduce((sum, user) => sum + user.hcoinBalance, 0);
             document.getElementById('total-hcoin').textContent = `${totalHcoin.toFixed(2)} H-Coin`;
         }
-        // Update transaction statistics
+        
+        // Update transaction stats
         function updateTransactionStats() {
             document.getElementById('pending-transactions').textContent = pendingTransactions.length;
+            const totalTrades = allTransactions.filter(t => t.type.includes('hcoin')).length;
+            document.getElementById('total-trades').textContent = totalTrades;
         }
-        // Show transaction details (buy/sell/deposit/withdrawal UZS qo'shildi)
-        function showTransactionDetails(transactionId) {
-            const transaction = allTransactions.find(t => t._id === transactionId);
-            if (!transaction) return;
-           
-            let typeSection = `<div class="flex justify-between items-center"><span class="text-gray-600">Type:</span><span class="capitalize">${transaction.type}</span></div>`;
-            let fromSection = '';
-            let toSection = '';
-            let methodSection = transaction.paymentMethod ? `<div class="flex justify-between items-center"><span class="text-gray-600">Payment Method:</span><span class="capitalize">${transaction.paymentMethod}</span></div>` : '';
-            let externalSection = transaction.externalDetails ? `<div class="flex justify-between items-start"><span class="text-gray-600">External Details:</span><span class="text-right">${transaction.externalDetails}</span></div>` : '';
-            let amountText = transaction.type === 'deposit' || transaction.type === 'withdrawal' ? 
-                             `${transaction.amount.toFixed(0)} UZS` : 
-                             `${transaction.amount.toFixed(2)} H-Coin`; // O'ZGARTIRILDI: deposit/withdrawal uchun UZS ko'rsatish
-           
-            const fromUser = transaction.fromUser ? `${transaction.fromUser.firstName} ${transaction.fromUser.lastName}` : 'Admin';
-            const toUser = transaction.toUser ? `${transaction.toUser.firstName} ${transaction.toUser.lastName}` : 'External';
-           
-            if (transaction.type === 'transfer') {
-                fromSection = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">From:</span>
-                        <div class="text-right">
-                            <p class="font-semibold">${fromUser}</p>
-                            ${transaction.fromUser ? `<p class="text-sm text-gray-500">${transaction.fromUser.walletNumber}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-                toSection = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">To:</span>
-                        <div class="text-right">
-                            <p class="font-semibold">${toUser}</p>
-                            ${transaction.toUser ? `<p class="text-sm text-gray-500">${transaction.toUser.walletNumber}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            } else if (transaction.type === 'deposit') {
-                toSection = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">To:</span>
-                        <div class="text-right">
-                            <p class="font-semibold">${toUser}</p>
-                            ${transaction.toUser ? `<p class="text-sm text-gray-500">${transaction.toUser.walletNumber}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            } else if (transaction.type === 'withdrawal') {
-                fromSection = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">From:</span>
-                        <div class="text-right">
-                            <p class="font-semibold">${fromUser}</p>
-                            ${transaction.fromUser ? `<p class="text-sm text-gray-500">${transaction.fromUser.walletNumber}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-                toSection = `<div class="flex justify-between items-center"><span class="text-gray-600">To:</span><span>External</span></div>`;
-            } else if (transaction.type === 'buy_hcoin' || transaction.type === 'sell_hcoin') {
-                fromSection = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">User:</span>
-                        <div class="text-right">
-                            <p class="font-semibold">${fromUser}</p>
-                            ${transaction.fromUser ? `<p class="text-sm text-gray-500">${transaction.fromUser.walletNumber}</p>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-           
-            const detailsHtml = `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Transaction ID:</span>
-                        <span class="font-mono text-sm">${transaction._id}</span>
-                    </div>
-                   
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Date:</span>
-                        <span>${new Date(transaction.createdAt).toLocaleString()}</span>
-                    </div>
-                   
-                    ${typeSection}
-                   
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Status:</span>
-                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Pending</span>
-                    </div>
-                   
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Amount:</span>
-                        <span class="font-bold text-lg text-purple-600">${amountText}</span>
-                    </div>
-                   
-                    ${fromSection}
-                    ${toSection}
-                    ${methodSection}
-                    ${externalSection}
-                   
-                    ${transaction.description ? `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">Description:</span>
-                        <span class="text-right">${transaction.description}</span>
-                    </div>
-                    ` : ''}
-                   
-                    ${transaction.priceAtTime ? `
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Price at Time:</span>
-                        <span>${transaction.priceAtTime} UZS/H-Coin</span>
-                    </div>
-                    ` : ''}
-                   
-                    ${transaction.fee ? `
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Fee:</span>
-                        <span class="text-red-600">${transaction.fee.toFixed(2)} UZS</span>
-                    </div>
-                    ` : ''}
-                   
-                    ${transaction.screenshot ? `
-                    <div class="flex justify-between items-start">
-                        <span class="text-gray-600">Screenshot:</span>
-                        <div class="text-right">
-                            <img src="${transaction.screenshot}" alt="Payment screenshot" class="w-32 h-32 object-cover rounded-lg border">
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-           
-            const actionsHtml = `
-                <button type="button" id="approve-transaction" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300" data-id="${transaction._id}">
-                    Approve
-                </button>
-                <button type="button" id="reject-transaction" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300" data-id="${transaction._id}">
-                    Reject
-                </button>
-            `;
-           
-            document.getElementById('transaction-details').innerHTML = detailsHtml;
-            document.getElementById('transaction-actions').innerHTML = actionsHtml;
-            document.getElementById('transaction-modal').classList.remove('hidden');
-           
-            document.getElementById('approve-transaction').addEventListener('click', function() {
-                updateTransactionStatus(transaction._id, 'approved');
-            });
-           
-            document.getElementById('reject-transaction').addEventListener('click', function() {
-                updateTransactionStatus(transaction._id, 'rejected');
-            });
-        }
-        // Update transaction status (saqlangan)
-        async function updateTransactionStatus(transactionId, status) {
-            try {
-                const response = await fetch(`/api/admin/transaction/${transactionId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status })
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification(`Transaction ${status} successfully!`);
-                    document.getElementById('transaction-modal').classList.add('hidden');
-                    loadTransactions();
-                } else {
-                    showNotification(data.error || `Failed to ${status} transaction`, 'error');
-                }
-            } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
-            }
-        }
-        // Open user edit modal (H-Coin va UZS)
-        function openUserEditModal(userId) {
-            const user = allUsers.find(u => u._id === userId);
-            if (!user) return;
-           
-            document.getElementById('edit-user-id').value = user._id;
-            document.getElementById('edit-user-name').textContent = `${user.firstName} ${user.lastName}`;
-            document.getElementById('edit-user-wallet').textContent = user.walletNumber;
-            document.getElementById('edit-hcoin-balance').value = user.hcoinBalance.toFixed(2);
-            document.getElementById('edit-uzs-balance').value = user.uzsBalance.toFixed(0);
-           
-            document.getElementById('user-modal').classList.remove('hidden');
-        }
-        // Toggle user freeze status (saqlangan)
-        async function toggleUserFreeze(userId) {
-            try {
-                const response = await fetch(`/api/admin/user/${userId}/freeze`, {
-                    method: 'PUT'
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification(`User ${data.user.isFrozen ? 'frozen' : 'unfrozen'} successfully!`);
-                    loadUsers();
-                } else {
-                    showNotification(data.error || 'Failed to update user status', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
-            }
-        }
-        // Update user balance (H-Coin va UZS)
-        async function updateUserBalance(userId, hcoinBalance, uzsBalance) {
-            try {
-                const response = await fetch(`/api/admin/user/${userId}/balance`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ hcoinBalance: parseFloat(hcoinBalance), uzsBalance: parseFloat(uzsBalance) })
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification('User balances updated successfully!');
-                    document.getElementById('user-modal').classList.add('hidden');
-                    loadUsers();
-                } else {
-                    showNotification(data.error || 'Failed to update user balances', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
-            }
-        }
-        // Update H-Coin value
-        async function updateHcoinValue(newValue, change) {
-            try {
-                const response = await fetch('/api/hcoin-value', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        value: parseFloat(newValue),
-                        change: parseFloat(change)
-                    })
-                });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification('H-Coin value updated successfully!');
-                    loadHcoinValue();
-                } else {
-                    showNotification(data.error || 'Failed to update H-Coin value', 'error');
-                }
-            } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
-            }
-        }
-        // Direct NewEra transfer (yangi)
-        async function sendToNewEra(username, amount, description) {
+        
+        // NewEra transfer
+        document.getElementById('newera-transfer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('newera-username').value;
+            const amount = parseFloat(document.getElementById('newera-amount').value);
+            const description = document.getElementById('newera-description').value;
             try {
                 const response = await fetch('/api/transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ neweraUsername: username, amount: parseFloat(amount), description })
+                    body: JSON.stringify({ neweraUsername: username, amount, description })
                 });
-               
-                const data = await response.json();
-               
-                if (data.success) {
-                    showNotification(`Transfer to NewEra user ${username} submitted!`);
-                    document.getElementById('newera-transfer-form').reset();
+                if (response.ok) {
+                    showNotification('NewEra transfer submitted');
+                    e.target.reset();
                 } else {
-                    showNotification(data.error || 'Failed to send transfer', 'error');
+                    showNotification('Failed to submit transfer', 'error');
                 }
             } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
+                showNotification('Network error', 'error');
             }
-        }
-        // Show Notification (saqlangan)
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
-            notification.classList.remove('hidden');
-           
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 5000);
-        }
+        });
+        
         // Event listeners
         document.getElementById('refresh-users').addEventListener('click', loadUsers);
         document.getElementById('refresh-transactions').addEventListener('click', loadTransactions);
-        // User search (saqlangan)
-        document.getElementById('user-search').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const filteredUsers = allUsers.filter(user =>
-                user.firstName.toLowerCase().includes(searchTerm) ||
-                user.lastName.toLowerCase().includes(searchTerm) ||
-                user.username.toLowerCase().includes(searchTerm) ||
-                user.walletNumber.toLowerCase().includes(searchTerm)
-            );
-            displayUsers(filteredUsers);
-        });
-        // H-Coin form submission
-        document.getElementById('hcoin-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const newValue = document.getElementById('hcoin-value-input').value;
-            const change = document.getElementById('hcoin-change').value;
-            updateHcoinValue(newValue, change);
-        });
-        // NewEra transfer form
-        document.getElementById('newera-transfer-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const username = document.getElementById('newera-username').value.trim();
-            const amount = document.getElementById('newera-amount').value;
-            const description = document.getElementById('newera-description').value;
-            if (!username || !amount) {
-                showNotification('Username and amount required', 'error');
-                return;
-            }
-            sendToNewEra(username, amount, description);
-        });
-        // Statistics
         document.getElementById('load-stats').addEventListener('click', loadStatistics);
         document.getElementById('stats-period').addEventListener('change', loadStatistics);
-        // User form submission (H-Coin va UZS)
-        document.getElementById('user-form').addEventListener('submit', function(e) {
+        document.getElementById('user-search').addEventListener('input', () => setTimeout(loadUsers, 300));
+        
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();
-            const userId = document.getElementById('edit-user-id').value;
-            const hcoinBalance = document.getElementById('edit-hcoin-balance').value;
-            const uzsBalance = document.getElementById('edit-uzs-balance').value;
-            updateUserBalance(userId, hcoinBalance, uzsBalance);
-        });
-        // Conversion form (saqlangan)
-        document.getElementById('conversion-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const currency = document.getElementById('edit-currency').value;
-            const newRate = document.getElementById('edit-rate').value;
-            updateConversionRate(currency, newRate);
-        });
-        document.getElementById('cancel-conversion-edit').addEventListener('click', function() {
-            document.getElementById('conversion-modal').classList.add('hidden');
-        });
-        document.getElementById('close-conversion-modal').addEventListener('click', function() {
-            document.getElementById('conversion-modal').classList.add('hidden');
-        });
-        // Modal close buttons (saqlangan)
-        document.getElementById('close-modal').addEventListener('click', function() {
-            document.getElementById('transaction-modal').classList.add('hidden');
-        });
-        document.getElementById('close-user-modal').addEventListener('click', function() {
-            document.getElementById('user-modal').classList.add('hidden');
-        });
-        document.getElementById('cancel-user-edit').addEventListener('click', function() {
-            document.getElementById('user-modal').classList.add('hidden');
-        });
-        // Logout (saqlangan)
-        document.getElementById('logout-btn').addEventListener('click', async function() {
             try {
                 await fetch('/api/logout', { method: 'POST' });
                 window.location.href = 'register-login.html';
@@ -1273,10 +1064,19 @@
                 console.error('Logout failed:', error);
             }
         });
-        // Initialize page
+        
+        // Notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 4000);
+        }
+        
+        // Initialization
         checkAuth();
-       
-        setInterval(loadData, 15000); // O'ZGARTIRILDI: 30000 dan 15000 ga (trade.html ga mos)
+        setInterval(loadData, 15000);
     </script>
 </body>
 </html>
