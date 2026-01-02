@@ -1,4 +1,5 @@
 // Updated wallet server.js with NFT marketplace, H-coin supply limit, Cloudinary integration, admin payment methods, auto-transfer with 1% fee
+require('dotenv').config();  // Bu qatorni eng yuqoriga qo'shing
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -17,23 +18,21 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Multer Storage with Cloudinary
+// Multer Storage with Cloudinary - FIXED: folder function now synchronous (returns string directly, no cb)
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm'],
-    folder: (req, file, cb) => {
-      let folderName;
+    folder: (req, file) => {  // FIXED: Removed cb, synchronous return
       if (file.fieldname === 'avatar') {
-        folderName = 'hcoin/avatars';
+        return 'hcoin/avatars';
       } else if (file.fieldname === 'image') {
-        folderName = 'hcoin/nfts';
+        return 'hcoin/nfts';
       } else if (file.fieldname === 'screenshot') {
-        folderName = 'hcoin/screenshots';
+        return 'hcoin/screenshots';
       } else {
-        folderName = 'hcoin';
+        return 'hcoin';
       }
-      cb(null, folderName);
     }
   }
 });
@@ -378,7 +377,7 @@ app.get('/api/user/wallet/:walletNumber', requireAuth, async (req, res) => {
   }
 });
 
-// Update user profile (multipart for avatar upload)
+// Update user profile (multipart for avatar upload) - FIXED: Better error handling for upload
 app.put('/api/user', requireAuth, upload.single('avatar'), async (req, res) => {
   try {
     const { firstName, lastName, bio, facebook, twitter, instagram } = req.body;
@@ -405,6 +404,10 @@ app.put('/api/user', requireAuth, upload.single('avatar'), async (req, res) => {
     res.json({ success: true, user });
   } catch (error) {
     console.error('Update profile error:', error);
+    // FIXED: Handle multer/Cloudinary specific errors
+    if (error.message && error.message.includes('cb is not a function')) {
+      return res.status(500).json({ error: 'Upload configuration error. Please contact support.' });
+    }
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });
@@ -1195,7 +1198,7 @@ app.put('/api/admin/transaction/:id', requireAuth, requireAdmin, async (req, res
           const neweraUsername = transaction.description.split('newera:')[1]?.trim();
           if (neweraUsername) {
             try {
-              const response = await fetch(`http://localhost:5000/api/user/${neweraUsername}/add-balance`, {
+              const response = await fetch(`https://wallet-uzb.onrender.com/api/user/${username}/add-balance`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
