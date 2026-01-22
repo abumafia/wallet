@@ -1,4 +1,5 @@
 // Updated wallet server.js with NFT marketplace, H-coin supply limit, Cloudinary integration, admin payment methods, auto-transfer with 1% fee
+// FIXED: NewEra integration – correct URL, variable, and fee handling; use env for API key
 require('dotenv').config();  // Bu qatorni eng yuqoriga qo'shing
 const express = require('express');
 const mongoose = require('mongoose');
@@ -200,6 +201,10 @@ async function updateHcoinPrice() {
   console.log(`H-coin price updated to ${newPrice} UZS (change: ${change.toFixed(2)}%)`);
 }
 setInterval(updateHcoinPrice, 15000); // 15 soniya
+
+// FIXED: NewEra URL va API key env dan olish
+const NEWERA_API_URL = process.env.NEWERA_API_URL || 'https://hallaym.site'; // .env da NEWERA_API_URL=https://hallaym.site qo'shing
+const WALLET_API_KEY = process.env.WALLET_API_KEY || 'wallet-api-key'; // .env da WALLET_API_KEY=your_secret qo'shing
 
 // Routes
 // Register (hcoinBalance va uzsBalance qo'shildi)
@@ -773,7 +778,7 @@ app.get('/api/admin/listings', requireAdmin, async (req, res) => {
   }
 });
 
-// Create transaction (transfer: internal auto-approved with 1% fee, NewEra pending)
+// FIXED: Create transaction – for NewEra, add fee calculation and description properly
 app.post('/api/transaction', requireAuth, async (req, res) => {
   try {
     let { toWallet, amount, description, neweraUsername } = req.body;
@@ -795,14 +800,26 @@ app.post('/api/transaction', requireAuth, async (req, res) => {
     let toUser = null;
     let status = 'pending';
     let fee = 0;
+    let netAmount = amount;
    
     if (neweraUsername) {
-      if (!neweraUsername) {
+      if (!neweraUsername.trim()) {
         return res.status(400).json({ error: 'NewEra username required' });
       }
       type = 'transfer';
-      description = `newera:${neweraUsername} ${description || ''}`;
+      description = `newera:${neweraUsername} ${description || ''}`.trim();
       status = 'pending'; // NewEra pending
+      fee = amount * 0.01; // 1% fee for NewEra too
+      netAmount = amount - fee;
+      if (fromUser.hcoinBalance < amount) {
+        return res.status(400).json({ error: 'Insufficient balance after fee' });
+      }
+      // Deduct fee immediately to admin for NewEra transfers
+      const admin = await getAdminUser();
+      fromUser.hcoinBalance -= fee;
+      admin.hcoinBalance += fee;
+      await fromUser.save();
+      await admin.save();
     } else {
       if (!toWallet) {
         return res.status(400).json({ error: 'Recipient wallet required' });
@@ -817,7 +834,7 @@ app.post('/api/transaction', requireAuth, async (req, res) => {
       // Internal transfer: auto-approve with 1% fee to admin
       const admin = await getAdminUser();
       fee = amount * 0.01;
-      const netAmount = amount - fee;
+      netAmount = amount - fee;
       if (fromUser.hcoinBalance < amount) {
         return res.status(400).json({ error: 'Insufficient balance after fee' });
       }
@@ -836,7 +853,7 @@ app.post('/api/transaction', requireAuth, async (req, res) => {
     const transaction = new Transaction({
       fromUser: fromUser._id,
       toUser: toUser?._id,
-      amount: neweraUsername ? amount : netAmount, // Net for internal
+      amount: netAmount, // Net amount for both
       type,
       description: description ? description.trim() : '',
       status,
@@ -1155,7 +1172,7 @@ app.get('/api/admin/transactions', requireAuth, requireAdmin, async (req, res) =
   }
 });
 
-// Admin transaction update (NewEra integration va H-coin handling, NFT ga ham qo'llaniladi; nft_create uchun)
+// FIXED: Admin transaction update – NewEra integration: correct URL, variable, auth header; populate fromUser properly; fee already deducted
 app.put('/api/admin/transaction/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
@@ -1195,17 +1212,17 @@ app.put('/api/admin/transaction/:id', requireAuth, requireAdmin, async (req, res
         await admin.save();
       } else if (transaction.type === 'transfer') {
         if (transaction.description && transaction.description.includes('newera')) {
-          const neweraUsername = transaction.description.split('newera:')[1]?.trim();
+          const neweraUsername = transaction.description.split('newera:')[1]?.trim().split(' ')[0]; // FIXED: Extract username correctly
           if (neweraUsername) {
             try {
-              const response = await fetch(`https://wallet-uzb.onrender.com/api/user/${username}/add-balance`, {
+              const response = await fetch(`${NEWERA_API_URL}/api/user/${neweraUsername}/add-balance`, { // FIXED: Correct URL
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': 'Bearer wallet-api-key'
+                  'Authorization': `Bearer ${WALLET_API_KEY}` // FIXED: Use env key
                 },
                 body: JSON.stringify({
-                  amount: transaction.amount,
+                  amount: transaction.amount, // Net amount after fee
                   fromWalletUser: {
                     username: transaction.fromUser.username,
                     walletNumber: transaction.fromUser.walletNumber
@@ -1213,15 +1230,25 @@ app.put('/api/admin/transaction/:id', requireAuth, requireAdmin, async (req, res
                 })
               });
               if (!response.ok) {
-                throw new Error('NewEra API error');
+                throw new Error(`NewEra API error: ${response.status}`);
               }
               const neweraData = await response.json();
               console.log('NewEra transfer successful:', neweraData);
+              // Deduct net amount from sender (fee already deducted)
+              await User.findByIdAndUpdate(transaction.fromUser, { $inc: { hcoinBalance: -transaction.amount } });
             } catch (apiError) {
               console.error('NewEra integration error:', apiError);
-              await User.findByIdAndUpdate(transaction.fromUser, { $inc: { hcoinBalance: transaction.amount } });
+              // Rollback: return fee to sender if needed, but since fee already to admin, just return full original
+              const admin = await getAdminUser();
+              await User.findByIdAndUpdate(transaction.fromUser, { $inc: { hcoinBalance: transaction.amount + transaction.fee } });
+              admin.hcoinBalance -= transaction.fee;
+              await admin.save();
+              transaction.status = 'rejected'; // Auto reject on error
+              await transaction.save();
               return res.status(500).json({ error: 'Transfer to NewEra failed, rolled back' });
             }
+          } else {
+            return res.status(400).json({ error: 'Invalid NewEra username in description' });
           }
         } else {
           // Internal transfer already handled in POST, but for pending ones (if any)
